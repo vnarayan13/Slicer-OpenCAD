@@ -4,7 +4,6 @@ import numpy
 import vtk.util.numpy_support
 from vtk import vtkShortArray, vtkDoubleArray
 
-
 class SegmentCADLogic:
   # Logic for SegmentCAD divided into sequential functions with helper functions at the bottom
   def __init__(self, SegmentCAD, nodePre, node1, node4):
@@ -30,27 +29,30 @@ class SegmentCADLogic:
     # Initial Rise at each voxel (percentage increase from pre-contrast to first post-contrast)
     self.nodeArrayInitialRise = ((self.nodeArray1).__truediv__(self.nodeArrayPre+1.0))-1.0
     # Compute slope at each voxel from first to fourth volume to determine curve type
-    self.slopeArray1_4 = (self.nodeArray4 - self.nodeArray1).__truediv__(self.nodeArray1)
+    self.slopeArray1_4 = (self.nodeArray4 - self.nodeArray1).__truediv__(self.nodeArray1+1.0)
     # Initialize SegmentCAD label map as numpy array
     shape = self.nodeArrayPre.shape
     self.nodeArraySegmentCADLabel = numpy.zeros(shape, dtype=numpy.int16)
     
   def arrayProcessing(self):
-    # Iterates through ROI coordinates and checks for initial rise percentage > minimum threshold
-    # If no ROI is provided, iterates through array of initial rise percentages with same shape as input volumes
-    # Determine if delayed curve is of type 1, 2, or 3 and assigns corresponding label color via colorAssign()
-
+    # Create Boolean array, target_voxels, with target voxel indices highlighted as True 
+    # Assigns color to SegmentCAD Label map index if corresponding slope condition is satisfied where target_voxel is True 
+      
     if self.ROIOn:
-      numberCoordinates = self.arrayLabelMapROICoordinates.shape[0]
-      for i in xrange (numberCoordinates):
-        index = tuple(self.arrayLabelMapROICoordinates[i])
-        if ((self.nodeArrayInitialRise[index] > self.minimumThreshold) and (self.nodeArrayPre[index] > 100)):
-          self.colorAssign(self.slopeArray1_4[index], index)
+      target_voxels = (self.nodeArrayLabelMapROI != 0) & (self.nodeArrayInitialRise > self.minimumThreshold) & (self.nodeArrayPre > 100)
     else:
-      for ind, x in numpy.ndenumerate(self.nodeArrayInitialRise):
-        if ((x > self.minimumThreshold) and (self.nodeArrayPre[ind] > 100)):
-          self.colorAssign(self.slopeArray1_4[ind], ind)
+      target_voxels = (self.nodeArrayInitialRise > self.minimumThreshold) & (self.nodeArrayPre > 100)
+  
+    # yellow (Plateau Slope)
+    self.nodeArraySegmentCADLabel[numpy.where( (self.slopeArray1_4 > self.curve3Maximum) & (self.slopeArray1_4 < self.curve1Minimum) & (target_voxels) )] = 291
     
+    # blue (slope of curve1 min = 0.2(default), Persistent Slope)
+    self.nodeArraySegmentCADLabel[numpy.where((self.slopeArray1_4 > self.curve1Minimum) & (target_voxels))] = 306
+    
+    # red (slope of curve3 max = -0.2(default), Washout Slope )
+    self.nodeArraySegmentCADLabel[numpy.where((self.slopeArray1_4 < self.curve3Maximum) & (target_voxels))] = 32
+      
+           
   def renderLabelMap(self):
     # Initializes a vtkMRMLScalarVolumeNode for the SegmentCAD Output and copies ijkToRAS matrix and Image data from nodeLabel
     ijkToRASMatrix = vtk.vtkMatrix4x4()
@@ -104,19 +106,6 @@ class SegmentCADLogic:
   def setLabelROI (self, nodeLabel):
     self.ROIOn = True
     self.nodeArrayLabelMapROI = self.createNumpyArray(nodeLabel)
-    self.arrayLabelMapROICoordinates = numpy.transpose(numpy.where(self.nodeArrayLabelMapROI != 0))
-    
-  def colorAssign(self, slope, index):
-    # Values assigned based on a ColorTableNode
-    if (slope > self.curve1Minimum):
-      # blue (slope of curve1 min = 0.2(default), Persistent Slope)
-      self.nodeArraySegmentCADLabel[index] = 306
-    elif (slope < self.curve3Maximum):
-      # red (slope of curve3 max = -0.2(default), Washout Slope )
-      self.nodeArraySegmentCADLabel[index] = 32
-    else:
-      # yellow (Plateau Slope)
-      self.nodeArraySegmentCADLabel[index] = 291
     
   def createNumpyArray (self, node):
     # Generate Numpy Array from vtkMRMLScalarVolumeNode
