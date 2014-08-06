@@ -9,16 +9,7 @@ import operator
 class TextureGLCM:
 
   def __init__(self, ii, parameterMatrix, parameterMatrixCoordinates, parameterValues, grayLevels, allKeys):
-    self.ii = ii
-    self.parameterMatrix = parameterMatrix
-    self.parameterMatrixCoordinates = parameterMatrixCoordinates
-    self.parameterValues = parameterValues
-    self.grayLevels = grayLevels
-    self.allKeys = allKeys
-       
-     
-    self.textureFeaturesGLCM = {}
-       
+    self.textureFeaturesGLCM = {}       
     self.textureFeaturesGLCM["Autocorrelation"] = "self.autocorrelationGLCM(P_glcm, prodMatrix)"
     self.textureFeaturesGLCM["Cluster Prominence"] = "self.clusterProminenceGLCM(P_glcm, sumMatrix, ux, uy)"
     self.textureFeaturesGLCM["Cluster Shade"] = "self.clusterShadeGLCM(P_glcm, sumMatrix, ux, uy)"
@@ -42,10 +33,15 @@ class TextureGLCM:
     self.textureFeaturesGLCM["Sum Variance"] = "self.sumVarianceGLCM(pxAddy, kValuesSum)"   
     self.textureFeaturesGLCM["Variance (GLCM)"] = "self.varianceGLCM(P_glcm, ivector, u)"
     
-             
+    self.ii = ii
+    self.parameterMatrix = parameterMatrix
+    self.parameterMatrixCoordinates = parameterMatrixCoordinates
+    self.parameterValues = parameterValues
+    self.grayLevels = grayLevels
+    self.keys = set(allKeys).intersection(self.textureFeaturesGLCM.keys())
+                
   def EvaluateFeatures(self):
-    keys = set(self.allKeys).intersection(self.textureFeaturesGLCM.keys())
-    if not keys:
+    if not self.keys:
       return(self.textureFeaturesGLCM)
         
     # normalization step:
@@ -116,7 +112,7 @@ class TextureGLCM:
             
     
     #Evaluate dictionary elements corresponding to user selected keys
-    for key in keys:
+    for key in self.keys:
       self.textureFeaturesGLCM[key] = eval(self.textureFeaturesGLCM[key])
     return(self.textureFeaturesGLCM)        
     

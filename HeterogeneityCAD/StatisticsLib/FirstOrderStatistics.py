@@ -7,10 +7,6 @@ import operator
 class FirstOrderStatistics:
 
   def __init__(self, parameterValues, bins, allKeys):
-    self.parameterValues = parameterValues
-    self.bins = bins
-    self.allKeys = allKeys
-    
     self.firstOrderStatistics = {}
     self.firstOrderStatistics["Voxel Count"] = "self.voxelCount(self.parameterValues)"
     self.firstOrderStatistics["Energy"] = "self.energyValue(self.parameterValues)"
@@ -27,16 +23,10 @@ class FirstOrderStatistics:
     self.firstOrderStatistics["Kurtosis"] = "self.kurtosisValue(self.parameterValues)"
     self.firstOrderStatistics["Variance"] = "self.varianceValue(self.parameterValues)"
     self.firstOrderStatistics["Uniformity"] = "self.uniformityValue(self.bins)"
-     
-  def EvaluateFeatures(self):   
-    keys = set(self.allKeys).intersection(self.firstOrderStatistics.keys())
-    if not keys:
-      return(self.firstOrderStatistics)
     
-    #Evaluate dictionary elements corresponding to user selected keys
-    for key in keys:
-      self.firstOrderStatistics[key] = eval(self.firstOrderStatistics[key])
-    return(self.firstOrderStatistics)
+    self.parameterValues = parameterValues
+    self.bins = bins
+    self.keys = set(allKeys).intersection(self.firstOrderStatistics.keys())
            
   def voxelCount(self, parameterArray):
     return (parameterArray.size)
@@ -71,8 +61,9 @@ class FirstOrderStatistics:
   def standardDeviation(self, parameterArray):
     return (numpy.std(parameterArray))
   
-  #private function?
   def _moment(self, a, moment=1, axis=0):
+    # Modified from SciPy module
+    
     if moment == 1:
       return numpy.float64(0.0)
     else:
@@ -81,11 +72,13 @@ class FirstOrderStatistics:
       return numpy.mean(s, axis)
 
   def skewnessValue(self, a, axis=0):
-    #Computes the skewness of a dataset 
+    # Modified from SciPy module
+    # Computes the skewness of a dataset
+     
     m2 = self._moment(a, 2, axis)
     m3 = self._moment(a, 3, axis)
     
-    #Control Flow: if m2==0 then vals = 0; else vals = m3/m2**1.5
+    # Control Flow: if m2==0 then vals = 0; else vals = m3/m2**1.5
     zero = (m2 == 0)
     vals = numpy.where(zero, 0, m3 / m2**1.5)
     
@@ -94,11 +87,13 @@ class FirstOrderStatistics:
     return vals
 
   def kurtosisValue(self, a, axis=0, fisher=True):
+    # Modified from SciPy module
+    
     m2 = self._moment(a,2,axis)
     m4 = self._moment(a,4,axis)
     zero = (m2 == 0)
     
-    #Set Floating-Point Error Handling
+    # Set Floating-Point Error Handling
     olderr = numpy.seterr(all='ignore')
     try:
       vals = numpy.where(zero, 0, m4 / m2**2.0)
@@ -116,4 +111,14 @@ class FirstOrderStatistics:
     return (numpy.std(parameterArray)**2)
   
   def uniformityValue(self, bins):
-    return (numpy.sum(bins**2))    
+    return (numpy.sum(bins**2))
+    
+  def EvaluateFeatures(self):
+    # Evaluate dictionary elements corresponding to user-selected keys
+       
+    if not self.keys:
+      return(self.firstOrderStatistics)
+    
+    for key in self.keys:
+      self.firstOrderStatistics[key] = eval(self.firstOrderStatistics[key])
+    return(self.firstOrderStatistics)    

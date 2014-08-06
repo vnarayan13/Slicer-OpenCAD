@@ -423,7 +423,7 @@ class HeterogeneityCADWidget:
     #
     self.HeterogeneityMetricGLCMMatrix = qt.QCheckBox()  
     self.HeterogeneityMetricGLCMMatrix.setFont(boldFont)
-    self.HeterogeneityMetricGLCMMatrix.setText('Gray-Level Co-occurrence Matrix')   
+    self.HeterogeneityMetricGLCMMatrix.setText('Generate Gray-Level Co-occurrence Matrix')   
     self.HeterogeneityMetricGLCMMatrix.checked = True
     #
     
@@ -580,7 +580,7 @@ class HeterogeneityCADWidget:
     #
     self.HeterogeneityMetricGLRLMatrix = qt.QCheckBox()
     self.HeterogeneityMetricGLRLMatrix.setFont(boldFont)
-    self.HeterogeneityMetricGLRLMatrix.setText('Gray-Level Run Length Matrix')
+    self.HeterogeneityMetricGLRLMatrix.setText('Generate Gray-Level Run Length Matrix')
     self.HeterogeneityMetricGLRLMatrix.checked = True
     #
  
@@ -1065,10 +1065,11 @@ class FeatureExtractionLogic:
     return(values, coordinates)
     
   def histogramData(self, voxelArray):
-    bins = numpy.bincount(voxelArray)
-    ii = numpy.nonzero(bins)[0]
+    # with np.histogram(), all but the last bin is half-open, so make one extra bin container
+    binContainers = numpy.arange(voxelArray.min(), voxelArray.max()+2)
+    bins = numpy.histogram(voxelArray, bins=binContainers)[0] # frequencies 
+    ii = numpy.unique(voxelArray) # discrete gray levels
     grayLevels = ii.size
-    #zip(ii, bins[ii]) for array of tuples of (values, frequency)
     return (bins, ii, grayLevels)
     
   def padMatrix(self, a, matrixCoordinates, dims, voxelArray):

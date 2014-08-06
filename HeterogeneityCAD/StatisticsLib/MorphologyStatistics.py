@@ -7,40 +7,26 @@ import operator
 class MorphologyStatistics:
 
   def __init__(self, labelNode, matrixSA, matrixSACoordinates, matrixSAValues, allKeys):
+    self.morphologyStatistics = {}
+    self.morphologyStatistics["Volume mm^3"] = 'self.volumeMM3(self.matrixSAValues, self.cubicMMPerVoxel)'
+    self.morphologyStatistics["Volume cc"] ='self.volumeCC(self.matrixSAValues, self.cubicMMPerVoxel, self.ccPerCubicMM)'
+    self.morphologyStatistics["Surface Area mm^2"] = 'self.surfaceArea(self.matrixSA, self.matrixSACoordinates, self.matrixSAValues, self.labelNode)'
+    self.morphologyStatistics["Surface:Volume Ratio"] = 'self.surfaceVolumeRatio(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
+    self.morphologyStatistics["Compactness 1"] = 'self.compactness1(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
+    self.morphologyStatistics["Compactness 2"] = 'self.compactness2(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
+    self.morphologyStatistics["Maximum 3D Diameter"] = 'self.maximum3DDiameter(self.labelNode, self.matrixSA, self.matrixSACoordinates)'
+    self.morphologyStatistics["Spherical Disproportion"] = 'self.sphericalDisproportion(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
+    self.morphologyStatistics["Sphericity"] = 'self.sphericityValue(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
+    
     self.labelNode = labelNode
     self.matrixSA = matrixSA
     self.matrixSACoordinates = matrixSACoordinates
     self.matrixSAValues = matrixSAValues
-    self.allKeys = allKeys
-      
-    self.morphologyStatistics = {}
-    self.morphologyStatistics["Volume mm^3"] = 'self.volumeMM3(self.matrixSAValues , cubicMMPerVoxel)'
-    self.morphologyStatistics["Volume cc"] ='self.volumeCC(self.matrixSAValues , cubicMMPerVoxel , ccPerCubicMM)'
-    self.morphologyStatistics["Surface Area mm^2"] = 'self.surfaceArea(self.matrixSA , self.matrixSACoordinates , self.matrixSAValues , self.labelNode)'
-    self.morphologyStatistics["Surface:Volume Ratio"] = 'self.surfaceVolumeRatio(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
-    self.morphologyStatistics["Compactness 1"] = 'self.compactness1(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
-    self.morphologyStatistics["Compactness 2"] = 'self.compactness2(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
-    self.morphologyStatistics["Maximum 3D Diameter"] = 'self.maximum3DDiameter(self.labelNode , self.matrixSA , self.matrixSACoordinates)'
-    self.morphologyStatistics["Spherical Disproportion"] = 'self.sphericalDisproportion(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
-    self.morphologyStatistics["Sphericity"] = 'self.sphericityValue(self.morphologyStatistics["Surface Area mm^2"], self.morphologyStatistics["Volume mm^3"])'
-         
-  def EvaluateFeatures(self):   
-    keys = set(self.allKeys).intersection(self.morphologyStatistics.keys())
-    if not keys:
-      return(self.morphologyStatistics)
+    self.keys = set(allKeys).intersection(self.morphologyStatistics.keys())
     
-    cubicMMPerVoxel = reduce(lambda x,y: x*y , self.labelNode.GetSpacing())
-    ccPerCubicMM = 0.001
-    
-    self.morphologyStatistics["Volume mm^3"] = eval(self.morphologyStatistics["Volume mm^3"])
-    self.morphologyStatistics["Surface Area mm^2"] = eval(self.morphologyStatistics["Surface Area mm^2"])
-    
-    #Evaluate dictionary elements corresponding to user selected keys
-    for key in keys:
-      if isinstance(self.morphologyStatistics[key], basestring):
-        self.morphologyStatistics[key] = eval(self.morphologyStatistics[key])     
-    return(self.morphologyStatistics)    
-       
+    self.cubicMMPerVoxel = reduce(lambda x,y: x*y , self.labelNode.GetSpacing())
+    self.ccPerCubicMM = 0.001
+                 
   def volumeMM3 (self, matrixSA, cubicMMPerVoxel):      
     return (matrixSA.size * cubicMMPerVoxel)
       
@@ -48,7 +34,6 @@ class MorphologyStatistics:
     return (matrixSA.size * cubicMMPerVoxel * ccPerCubicMM)
     
   def surfaceArea(self, a, matrixSACoordinates, matrixSAValues, labelNode):
-    # use numpy slice notation and convolve with a kernel function object
     x, y, z = labelNode.GetSpacing()
     xz = x*z
     yz = y*z
@@ -82,7 +67,8 @@ class MorphologyStatistics:
     return ((36 * math.pi) * ((volumeMM3)**2)/((surfaceArea)**3)) 
   
   def maximum3DDiameter(self, labelNode, matrixSA, matrixSACoordinates):
-    # largest pairwise euclidean distance between tumor surface voxels  
+    # largest pairwise euclidean distance between tumor surface voxels
+     
     x, y, z = labelNode.GetSpacing()
     
     minBounds = numpy.array([numpy.min(matrixSACoordinates[0]), numpy.min(matrixSACoordinates[1]), numpy.min(matrixSACoordinates[2])])
@@ -106,4 +92,18 @@ class MorphologyStatistics:
         
   def sphericityValue(self, surfaceArea, volumeMM3):      
     return ( ((math.pi)**(1/3.0) * (6 * volumeMM3)**(2/3.0)) / (surfaceArea) ) 
+  
+  def EvaluateFeatures(self):
+    # Evaluate dictionary elements corresponding to user-selected keys
     
+    if not self.keys:
+      return(self.morphologyStatistics)
+    
+    # Volume and Surface Area are pre-calculated even if only one morphology metric is user-selected
+    self.morphologyStatistics["Volume mm^3"] = eval(self.morphologyStatistics["Volume mm^3"])
+    self.morphologyStatistics["Surface Area mm^2"] = eval(self.morphologyStatistics["Surface Area mm^2"])
+    
+    for key in self.keys:
+      if isinstance(self.morphologyStatistics[key], basestring):
+        self.morphologyStatistics[key] = eval(self.morphologyStatistics[key])     
+    return(self.morphologyStatistics)   

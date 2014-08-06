@@ -5,23 +5,22 @@ import numpy
 class NodeInformation:
 
   def __init__(self, dataNode, labelNode, allKeys):
+    self.nodeInformation = {}
+    self.nodeInformation["Node"] = "self.nodeName(self.dataNode)"
     
     self.dataNode = dataNode
     self.labelNode = labelNode
-    self.allKeys = allKeys
+    self.keys = set(allKeys).intersection(self.nodeInformation.keys())
+             
+  def nodeName (self, dataNode):
+    return (dataNode.GetName())
     
-    self.nodeInformation = {}
-    self.nodeInformation["Node"] = "self.nodeName(self.dataNode)"
-     
-  def EvaluateFeatures(self):   
-    keys = set(self.allKeys).intersection(self.nodeInformation.keys())
-    if not keys:
+  def EvaluateFeatures(self):
+    # Evaluate dictionary elements corresponding to user-selected keys
+       
+    if not self.keys:
       return(self.nodeInformation)
-    
-    #Evaluate dictionary elements corresponding to user selected keys
-    for key in keys:
+       
+    for key in self.keys:
       self.nodeInformation[key] = eval(self.nodeInformation[key])
     return(self.nodeInformation)
-       
-  def nodeName (self, node):
-    return (node.GetName())
