@@ -2,6 +2,7 @@ import os
 import inspect
 from __main__ import vtk, qt, ctk, slicer
 import string
+import numpy
 import LabelStatisticsLogic
 import SegmentCADLogic
 
@@ -46,6 +47,14 @@ class SegmentCADWidget:
       self.parent.show()
       
   def setup(self):
+    # reload button
+    self.reloadButton = qt.QPushButton("Reload")
+    self.reloadButton.toolTip = "Reload this module."
+    self.reloadButton.name = "HeterogeneityCAD Reload"
+    self.layout.addWidget(self.reloadButton)
+    self.reloadButton.connect('clicked()', self.onReload)
+    
+    
     # Tumor Segmentation Collapsible Button
     self.TumorSegmentationCollapsibleButton = ctk.ctkCollapsibleButton()
     self.TumorSegmentationCollapsibleButton.text = "SegmentCAD Segmentation"
@@ -58,10 +67,35 @@ class SegmentCADWidget:
     self.TumorSegmentationLayout.addWidget(self.selectionsCollapsibleButton)
     # Layout within the collapsible button
     self.volumesLayout = qt.QFormLayout(self.selectionsCollapsibleButton)
+    
+    # Use Multivolume Node as input
+    self.enableMultiVolume = qt.QCheckBox(self.selectionsCollapsibleButton)
+    self.enableMultiVolume.setText('Input Multi-Volume Node')
+    self.enableMultiVolume.checked = True
+    self.enableMultiVolume.setToolTip('Use Multi-Volume Node, with volumes imported in the correct order')
+    self.inputSelectorMultiVolume = slicer.qMRMLNodeComboBox(self.selectionsCollapsibleButton)
+    self.inputSelectorMultiVolume.nodeTypes = ( ("vtkMRMLMultiVolumeNode"), "" )
+    self.inputSelectorMultiVolume.selectNodeUponCreation = False
+    self.inputSelectorMultiVolume.renameEnabled = True
+    self.inputSelectorMultiVolume.removeEnabled = False
+    self.inputSelectorMultiVolume.noneEnabled = True
+    self.inputSelectorMultiVolume.addEnabled = False
+    self.inputSelectorMultiVolume.setMRMLScene(slicer.mrmlScene)
+    self.inputSelectorMultiVolume.setToolTip('Use Multi-Volume Node, with volumes imported in the correct order')
+       
+    self.volumesLayout.addRow (self.enableMultiVolume, self.inputSelectorMultiVolume)
+    
+    self.nodeInputFrame = ctk.ctkCollapsibleGroupBox(self.selectionsCollapsibleButton)
+    self.nodeInputFrame.title = "Input Scalar Volume Nodes"
+    self.nodeInputFrame.collapsed = True
+    self.nodeInputFrame.enabled = False
+    self.nodeInputFrame.setLayout(qt.QFormLayout())
+    self.volumesLayout.addRow(self.nodeInputFrame)
+    
     # Select Pre Node
-    self.inputPre = qt.QLabel("Pre-contrast Volume", self.selectionsCollapsibleButton)
+    self.inputPre = qt.QLabel("Pre-contrast Volume", self.nodeInputFrame)
     self.inputPre.setToolTip('Select the initial pre-contrast volume node.')
-    self.inputSelectorPre = slicer.qMRMLNodeComboBox(self.selectionsCollapsibleButton)
+    self.inputSelectorPre = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorPre.nodeTypes = (("vtkMRMLScalarVolumeNode"), "")
     self.inputSelectorPre.addAttribute(("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorPre.selectNodeUponCreation = False
@@ -71,11 +105,13 @@ class SegmentCADWidget:
     self.inputSelectorPre.noneDisplay = 'Please Select Volume'
     self.inputSelectorPre.setMRMLScene(slicer.mrmlScene)
     self.inputSelectorPre.setToolTip('Select the initial pre-contrast volume node.')
-    self.volumesLayout.addRow(self.inputPre, self.inputSelectorPre)
+    #self.volumesLayout.addRow(self.inputPre, self.inputSelectorPre)
+    self.nodeInputFrame.layout().addRow(self.inputPre, self.inputSelectorPre)
+    
     # Select First Node
-    self.inputFirst = qt.QLabel("First Post-contrast Volume", self.selectionsCollapsibleButton)
+    self.inputFirst = qt.QLabel("First Post-contrast Volume", self.nodeInputFrame)
     self.inputFirst.setToolTip('Select the first post-contrast volume node to calculate intitial enhancement and curve type.')
-    self.inputSelectorFirst = slicer.qMRMLNodeComboBox(self.selectionsCollapsibleButton)
+    self.inputSelectorFirst = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorFirst.nodeTypes = (("vtkMRMLScalarVolumeNode"), "")
     self.inputSelectorFirst.addAttribute(("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorFirst.selectNodeUponCreation = False
@@ -85,11 +121,13 @@ class SegmentCADWidget:
     self.inputSelectorFirst.noneDisplay = 'Please Select Volume'
     self.inputSelectorFirst.setMRMLScene(slicer.mrmlScene)
     self.inputSelectorFirst.setToolTip('Select the first post-contrast volume node to calculate intitial enhancement and curve type.')
-    self.volumesLayout.addRow(self.inputFirst, self.inputSelectorFirst)
+    #self.volumesLayout.addRow(self.inputFirst, self.inputSelectorFirst)
+    self.nodeInputFrame.layout().addRow(self.inputFirst, self.inputSelectorFirst)
+    
     # Select Second Node
-    self.inputSecond = qt.QLabel("Second Post-contrast Volume", self.selectionsCollapsibleButton)
+    self.inputSecond = qt.QLabel("Second Post-contrast Volume", self.nodeInputFrame)
     self.inputSecond.setToolTip('Select a second post-contrast volume node (not required).')
-    self.inputSelectorSecond = slicer.qMRMLNodeComboBox(self.selectionsCollapsibleButton)
+    self.inputSelectorSecond = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorSecond.nodeTypes = (("vtkMRMLScalarVolumeNode"), "")
     self.inputSelectorSecond.addAttribute(("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorSecond.selectNodeUponCreation = False
@@ -99,11 +137,13 @@ class SegmentCADWidget:
     self.inputSelectorSecond.noneDisplay = 'Please Select Volume'
     self.inputSelectorSecond.setMRMLScene(slicer.mrmlScene)
     self.inputSelectorSecond.setToolTip('Select a second post-contrast volume node (not required).')
-    self.volumesLayout.addRow(self.inputSecond, self.inputSelectorSecond)
+    #self.volumesLayout.addRow(self.inputSecond, self.inputSelectorSecond)
+    self.nodeInputFrame.layout().addRow(self.inputSecond, self.inputSelectorSecond)
+    
     # Select Third Node 
-    self.inputThird = qt.QLabel("Third Post-contrast Volume", self.selectionsCollapsibleButton)
+    self.inputThird = qt.QLabel("Third Post-contrast Volume", self.nodeInputFrame)
     self.inputThird.setToolTip('Select a third post-contrast volume node (not required).')
-    self.inputSelectorThird = slicer.qMRMLNodeComboBox(self.selectionsCollapsibleButton)
+    self.inputSelectorThird = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorThird.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
     self.inputSelectorThird.addAttribute( ("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorThird.selectNodeUponCreation = False
@@ -113,11 +153,13 @@ class SegmentCADWidget:
     self.inputSelectorThird.noneDisplay = 'Please Select Volume'
     self.inputSelectorThird.setMRMLScene(slicer.mrmlScene)
     self.inputSelectorThird.setToolTip('Select a third post-contrast volume node (not required).')
-    self.volumesLayout.addRow(self.inputThird, self.inputSelectorThird)
+    #self.volumesLayout.addRow(self.inputThird, self.inputSelectorThird)
+    self.nodeInputFrame.layout().addRow(self.inputThird, self.inputSelectorThird)
+    
     # Select Fourth Node  
-    self.inputFourth = qt.QLabel("Fourth Post-contrast Volume", self.selectionsCollapsibleButton)
+    self.inputFourth = qt.QLabel("Fourth Post-contrast Volume", self.nodeInputFrame)
     self.inputFourth.setToolTip('Select the fourth or final post-contrast volume node to calculate curve type based on the delayed curve slope.')
-    self.inputSelectorFourth = slicer.qMRMLNodeComboBox(self.selectionsCollapsibleButton)
+    self.inputSelectorFourth = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorFourth.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
     self.inputSelectorFourth.addAttribute( ("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorFourth.selectNodeUponCreation = False
@@ -127,7 +169,9 @@ class SegmentCADWidget:
     self.inputSelectorFourth.noneDisplay = 'Please Select Volume'
     self.inputSelectorFourth.setMRMLScene(slicer.mrmlScene)
     self.inputSelectorFourth.setToolTip('Select the fourth or final post-contrast volume node to calculate curve type based on the delayed curve slope.')
-    self.volumesLayout.addRow(self.inputFourth, self.inputSelectorFourth)
+    #self.volumesLayout.addRow(self.inputFourth, self.inputSelectorFourth)
+    self.nodeInputFrame.layout().addRow(self.inputFourth, self.inputSelectorFourth)
+    
     # Enable and Select Input Label Map as ROI
     self.enableLabel = qt.QCheckBox(self.selectionsCollapsibleButton)
     self.enableLabel.setText('Use Label Map as ROI')
@@ -167,7 +211,7 @@ class SegmentCADWidget:
     self.outputSelectorLabel.setToolTip('Select or create a label map volume node as the SegmentCAD segmentation output.')
     self.outlabelLayout.addRow(self.outputLabel, self.outputSelectorLabel)
     # SegmentCAD Label Map Legend
-    self.outputLegend = qt.QLabel("Legend  |  Blue: Type I  |  Yellow: Type II  |  Red: Type III  |", self.outlabelCollapsibleButton)
+    self.outputLegend = qt.QLabel("| Type I Persistent: Blue | Type II Plateau: Yellow | Type III Washout: Red |", self.outlabelCollapsibleButton)
     self.outputLegend.setToolTip('SegmentCAD Label Map Legend  | Blue: Type I Persistent curve  |  Yellow: Type II Plateau curve  |  Red: Type III Washout curve  |')
     self.outlabelLayout.addRow(self.outputLegend)
     # Enable Volume Rendering of the SegmentCAD label map
@@ -282,6 +326,7 @@ class SegmentCADWidget:
     # Connections
     self.SegmentCADButton.connect('clicked()', self.onSegmentCADButtonClicked)
     self.enableLabel.connect('stateChanged(int)', self.onEnableLabel)
+    self.enableMultiVolume.connect('stateChanged(int)', self.onEnableMultiVolume)
     self.chartButton.connect('clicked()', self.onChart)
     self.iCharting.connect('toggled(bool)', self.onInteractiveChartingChanged)
     
@@ -425,20 +470,34 @@ class SegmentCADWidget:
     if (baselineSignal != 0) and (baselinePercentages[1] != 0):
       slope1_4 = (volumeIntensities[self.nComponents-1] - volumeIntensities[1]).__truediv__(volumeIntensities[1])
       if (slope1_4 > self.curve1Minimum):
-        curveType = 'Curve Type 1: Persistent'
+        curveType = 'Type 1: Persistent'
       elif (slope1_4 < self.curve3Maximum):
-        curveType = 'Curve Type 3: Washout'
+        curveType = 'Type 3: Washout'
       else:
-        curveType = 'Curve Type 2: Plateau'
+        curveType = 'Type 2: Plateau'
     self.chartNode.AddArray(curveType, self.arrayNode.GetID())
   
-  def onEnableLabel (self):
+  def onEnableLabel(self):
     # Enable the use of an input label map as an ROI
     if self.enableLabel.isChecked():
       self.inputSelectorLabel.enabled = True
     else:
       self.inputSelectorLabel.enabled = False
       
+  def onEnableMultiVolume(self):
+    # Toggle between single MultiVolume Node input or multiple Scalar Volume inputs
+    if self.enableMultiVolume.isChecked():
+      self.nodeInputFrame.collapsed = True
+      self.nodeInputFrame.enabled = False
+      self.inputSelectorMultiVolume.enabled = True
+      self.enableMultiVolume.setStyleSheet('color: black')
+    else:     
+      self.nodeInputFrame.collapsed = False
+      self.nodeInputFrame.enabled = True 
+      self.inputSelectorMultiVolume.enabled = False
+      self.inputSelectorMultiVolume.setCurrentNode(None)
+      self.enableMultiVolume.setStyleSheet('color: gray')
+          
   def onChart(self):
     """This Logic is copied from the Label Statistics Module -Steve Pieper (Isomics)"""
     # Create a bar chart of SegmentCAD label statistics data
@@ -489,23 +548,35 @@ class SegmentCADWidget:
   def onSegmentCADButtonClicked(self):
     self.SegmentCADButton.text = "Processing..."
     slicer.app.processEvents()
-    self.nodePre = self.inputSelectorPre.currentNode()
-    self.node1 = self.inputSelectorFirst.currentNode()
-    self.node2 = self.inputSelectorSecond.currentNode()
-    self.node3 = self.inputSelectorThird.currentNode()
-    self.node4 = self.inputSelectorFourth.currentNode()
-    self.ROIOnOff = self.enableLabel.isChecked()
-    self.nodeLabel = self.inputSelectorLabel.currentNode()
+    
+    enabledMultiVolume = self.enableMultiVolume.isChecked()
+    enabledROI = self.enableLabel.isChecked()
+    enabledVolumeRendering = self.enableVolumeRendering.isChecked()
+    
+    if enabledMultiVolume:
+      self.nodeMultiVolume = self.inputSelectorMultiVolume.currentNode()
+    else:     
+      self.nodePre = self.inputSelectorPre.currentNode()
+      self.node1 = self.inputSelectorFirst.currentNode()
+      self.node2 = self.inputSelectorSecond.currentNode()
+      self.node3 = self.inputSelectorThird.currentNode()
+      self.node4 = self.inputSelectorFourth.currentNode()
+    
+    if enabledROI:    
+      self.nodeLabel = self.inputSelectorLabel.currentNode()    
     
     self.nodeSegmentCAD = self.outputSelectorLabel.currentNode()
-    self.volumeRenderingOnOff = self.enableVolumeRendering.isChecked()
     
     self.minimumThreshold = (self.inputSelectorMinimumThreshold.value)/(100)
     self.curve3Maximum = -1 * (self.inputSelectorCurve3.value)
     self.curve1Minimum = self.inputSelectorCurve1.value
     
     # Check if input Volumes and ROI are provided
-    if not (self.nodePre and self.node1 and self.node4):
+    if enabledMultiVolume and (not (self.nodeMultiVolume)):
+      qt.QMessageBox.critical(slicer.util.mainWindow(),'SegmentCAD', 'Please select a Multi-Volume Node representing a DCE-MRI time series')
+      self.SegmentCADButton.text = "Apply SegmentCAD"
+      return
+    if (not (enabledMultiVolume)) and (not (self.nodePre and self.node1 and self.node4)):
       qt.QMessageBox.critical(slicer.util.mainWindow(),'SegmentCAD', 'Please select one pre-contrast volume and at least two post-contrast volumes')
       self.SegmentCADButton.text = "Apply SegmentCAD"
       return
@@ -513,25 +584,32 @@ class SegmentCADWidget:
       qt.QMessageBox.critical(slicer.util.mainWindow(),'SegmentCAD', 'Please create or select an output label map volume.')
       self.SegmentCADButton.text = "Apply SegmentCAD"
       return
-    if self.ROIOnOff and (not (self.nodeLabel)):
+    if enabledROI and (not (self.nodeLabel)):
       qt.QMessageBox.critical(slicer.util.mainWindow(),'SegmentCAD', 'Please provide an input label map to use as ROI')
       self.SegmentCADButton.text = "Apply SegmentCAD"
       return
       
     # Generate list of valid volume nodes for charting
-    self.volumeNodes = [self.nodePre, self.node1, self.node4]
-    if self.node2:
-      self.volumeNodes.insert(2, self.node2)
-    if self.node3:
-      self.volumeNodes.insert(3, self.node3)
+    if (not (enabledMultiVolume)):  
+      self.volumeNodes = [self.nodePre, self.node1, self.node4]
+      if self.node2:
+        self.volumeNodes.insert(2, self.node2)
+      if self.node3:
+        self.volumeNodes.insert(3, self.node3)
 
     # Initialize segmentation inputs and parameters
     self.SegmentCADButton.text = "Converting Volumes to Arrays"
     slicer.app.processEvents()
-    self.logic = SegmentCADLogic.SegmentCADLogic(self.nodeSegmentCAD, self.nodePre, self.node1, self.node4)
-    self.logic.setAdvancedParameters(self.minimumThreshold, self.curve1Minimum, self.curve3Maximum)
-    if self.ROIOnOff:
+    self.logic = SegmentCADLogic.SegmentCADLogic(self.nodeSegmentCAD)#, self.nodePre, self.node1, self.node4)
+    
+    if enabledMultiVolume:
+      self.logic.setInputMultiVolumeNode(self.nodeMultiVolume)
+    else:
+      self.logic.setInputScalarVolumeNodes(self.nodePre, self.node1, self.node4)  
+      
+    if enabledROI:
       self.logic.setLabelROI(self.nodeLabel)
+    self.logic.setAdvancedParameters(self.minimumThreshold, self.curve1Minimum, self.curve3Maximum)
     self.logic.initializeNodeArrays()
 
     # Segment and generate SegmentCAD label map
@@ -539,20 +617,54 @@ class SegmentCADWidget:
     slicer.app.processEvents()
     self.logic.arrayProcessing()
     self.logic.renderLabelMap()
-    if self.volumeRenderingOnOff:
+    if enabledVolumeRendering:
       self.logic.renderVolume()
 
     # Generate statistics table for SegmentCAD label map
     self.SegmentCADButton.text = "Populating SegmentCAD Label Statistics Data"
     slicer.app.processEvents()
-    if self.enableStats.isChecked():
+    if (not (enabledMultiVolume)) and self.enableStats.isChecked():
       self.statisticsLogic = LabelStatisticsLogic.LabelStatisticsLogic(self.node1, self.nodeSegmentCAD)
       self.populateStats()
       self.chartButton.enabled = True
       self.labelstatisticsCollapsibleButton.collapsed = False
       
     self.SegmentCADButton.text = "Apply SegmentCAD"
-    self.initializeCharting()
+    
+    if (not (enabledMultiVolume)):
+      self.initializeCharting()
     return
 
-  
+  def onReload(self, moduleName="SegmentCAD"):
+    #Generic reload method for any scripted module.
+    #ModuleWizard will subsitute correct default moduleName.
+    
+    import imp, sys, os, slicer
+    
+    widgetName = moduleName + "Widget"
+
+    # reload the source code
+    # - set source file path
+    # - load the module to the global space
+    filePath = eval('slicer.modules.%s.path' % moduleName.lower())
+    p = os.path.dirname(filePath)
+    if not sys.path.__contains__(p):
+      sys.path.insert(0,p)
+    fp = open(filePath, "r")
+    globals()[moduleName] = imp.load_module(
+        moduleName, fp, filePath, ('.py', 'r', imp.PY_SOURCE))
+    fp.close()
+
+    # rebuild the widget
+    # - find and hide the existing widget
+    # - create a new widget in the existing parent
+    # parent = slicer.util.findChildren(name='%s Reload' % moduleName)[0].parent()
+    parent = self.parent
+    for child in parent.children():
+      try:
+        child.hide()
+      except AttributeError:
+        pass
+    globals()[widgetName.lower()] = eval(
+        'globals()["%s"].%s(parent)' % (moduleName, widgetName))
+    globals()[widgetName.lower()].setup()

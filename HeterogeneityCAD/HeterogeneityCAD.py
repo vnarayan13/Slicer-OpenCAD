@@ -171,7 +171,19 @@ class HeterogeneityCADWidget:
     #################################################
     #End HeterogeneityCAD Inputs Collapsible Button
     #################################################
+    self.featureClasses = ("First-Order Statistics", "Morphology and Shape", "Renyi Dimensions", "Geometrical Measures", "Texture: GLCM", "Texture: GLRL")
     
+    self.firstOrderStatisticsKeys = ("Data Node", "Voxel Count", "Energy", "Entropy" , "Minimum Intensity", "Maximum Intensity", "Mean Intensity", "Median Intensity", "Range", "Mean Absolute Deviation", "Root Mean Square",  "Standard Deviation", "Skewness", "Kurtosis", "Variance", "Uniformity")
+    
+    self.morphologicalStatisticsKeys = ("Volume mm^3", "Volume cc", "Surface Area mm^2", "Surface Area to Volume Ratio", "Compactness 1", "Compactness 2", "Maximum 3D Diameter", "Spherical Disproportion", "Sphericity") 
+    
+    self.renyiDimensionKeys = ("Box-Counting Dimension", "Information Dimension", "Correlation Dimension")
+    
+    self.geometricalMeasuresKeys = ("Extruded Surface Area", "Extruded Volume", "Extruded Surface Area to Volume Ratio", "Extruded Box-Dimension")
+    
+    self.textureGLCMKeys = ("Autocorrelation", "Cluster Prominence", "Cluster Shade", "Cluster Tendency", "Contrast", "Correlation", "Difference Entropy", "Dissimilarity", "Energy", "Entropy(H)", "Homogeneity 1", "Homogeneity 2", "Informational Measure of Correlation 1 (IMC1)", "Informational Measure of Correlation 2 (IMC2)", "Inverse Difference Moment Normalized (IDMN)", "Inverse Difference Normalized (IDN)", "Inverse Variance", "Maximum Probability", "Sum Average", "Sum Entropy", "Sum Variance", "Variance")
+    
+    self.textureGLRLKeys = ("Short Run Emphasis (SRE)", "Long Run Emphasis (LRE)", "Gray Level Non-Uniformity (GLN)", "Run Length Non-Uniformity (RLN)", "Run Percentage (RP)", "Low Gray Level Run Emphasis (LGLRE)", "High Gray Level Run Emphasis (HGLRE)", "Short Run Low Gray Level Emphasis (SRLGLE)", "Short Run High Gray Level Emphasis (SRHGLE)", "Long Run Low Gray Level Emphasis (LRLGLE)", "Long Run High Gray Level Emphasis (LRHGLE)")
     
     #################################################
     #HeterogeneityCAD Metrics Collapsible Button
