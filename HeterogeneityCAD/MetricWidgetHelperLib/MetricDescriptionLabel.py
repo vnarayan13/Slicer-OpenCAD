@@ -4,20 +4,16 @@ import string
 
 class MetricDescriptionLabel:
   
-  def __init__(self, metricWidget):
+  def __init__(self, metricName):
     self.descriptionLabel = qt.QLabel()
     self.descriptionLabel.setFixedWidth(300)
     self.descriptionLabel.setFrameStyle(qt.QFrame.Box)
     self.descriptionLabel.setWordWrap(True)
    
-    metricName = metricWidget.text
-    self.description = metricName + ' Description:\n\n'
-    
-    
+    self.description = metricName + ' Description:\n\n'  
     self.setDescription(metricName)
+    
     self.descriptionLabel.setText(self.description)
-  
-
   
   def setDescription(self, metricName):
   
@@ -166,8 +162,6 @@ class MetricDescriptionLabel:
     elif metricName == "LRHGLE":
       self.description +="Long Run High Gray Level Emphasis (LRHGLE) measures the joint distribution of long run lengths with higher gray-level values."
       
-  
-  
   
     
   def getDescription(self):

@@ -1,2 +1,2 @@
 from MetricDescriptionLabel import *
-from ContextMenu import *
+from MetricWidget import *

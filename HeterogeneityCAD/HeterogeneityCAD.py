@@ -5,6 +5,8 @@ import vtk.util.numpy_support
 import math
 import decimal
 import operator
+import collections
+import itertools
 from decimal import*
 
 from vtk import vtkShortArray
@@ -59,7 +61,21 @@ class HeterogeneityCADWidget:
     # Initialize dictionary of containers for descriptive context menus and parameter edit windows
     self.metricContextMenus = {}
     
+    # use OrderedDict for class-specific dictionary of function calls
+    # map feature class to list of features
+    self.featureClassKeys = collections.OrderedDict()
+    self.featureClassKeys["First-Order Statistics"] = ["Voxel Count", "Energy", "Entropy" , "Minimum Intensity", "Maximum Intensity", "Mean Intensity", "Median Intensity", "Range", "Mean Deviation", "Root Mean Square",  "Standard Deviation", "Skewness", "Kurtosis", "Variance", "Uniformity"]
+    self.featureClassKeys["Morphology and Shape"] = ["Volume mm^3", "Volume cc", "Surface Area mm^2", "Surface:Volume Ratio", "Compactness 1", "Compactness 2", "Maximum 3D Diameter", "Spherical Disproportion", "Sphericity"]
+    self.featureClassKeys["Renyi Dimensions"] = ["Box-Counting Dimension", "Information Dimension", "Correlation Dimension"]
+    self.featureClassKeys["Geometrical Measures"] = ["Extruded Surface Area", "Extruded Volume", "Extruded Surface:Volume Ratio"]
+    self.featureClassKeys["Texture: GLCM"] = ["Autocorrelation", "Cluster Prominence", "Cluster Shade", "Cluster Tendency", "Contrast", "Correlation", "Difference Entropy", "Dissimilarity", "Energy (GLCM)", "Entropy(GLCM)", "Homogeneity 1", "Homogeneity 2", "IMC1", "IMC2", "IDMN", "IDN", "Inverse Variance", "Maximum Probability", "Sum Average", "Sum Entropy", "Sum Variance", "Variance (GLCM)"]
+    self.featureClassKeys["Texture: GLRL"] = ["SRE", "LRE", "GLN", "RLN", "RP", "LGLRE", "HGLRE", "SRLGLE", "SRHGLE", "LRLGLE", "LRHGLE"]
     
+    # map feature class to list of feature checkbox widgets
+    self.featureWidgets = collections.OrderedDict()
+    for key in self.featureClassKeys.keys():
+      self.featureWidgets[key] = list()   
+ 
   def setup(self):
     
     #Instantiate and Connect Widgets
@@ -71,6 +87,8 @@ class HeterogeneityCADWidget:
     self.layout.addWidget(self.reloadButton)
     self.reloadButton.connect('clicked()', self.onReload)
     ###############################
+    
+    # Bold font style
     boldFont = qt.QFont()
     boldFont.setBold(True)
     
@@ -81,8 +99,7 @@ class HeterogeneityCADWidget:
     self.inputHeterogeneityCADCollapsibleButton.text = "HeterogeneityCAD Input"
     self.layout.addWidget(self.inputHeterogeneityCADCollapsibleButton)
     self.inputHeterogeneityCADLayout = qt.QFormLayout(self.inputHeterogeneityCADCollapsibleButton)
-       
-      
+             
     ##Input Volume as a PET/CT/MRI image or parameter map converted to a volume
     self.inputVolHetFrame = qt.QFrame(self.inputHeterogeneityCADCollapsibleButton)
     self.inputVolHetFrame.setLayout(qt.QHBoxLayout())
@@ -171,19 +188,7 @@ class HeterogeneityCADWidget:
     #################################################
     #End HeterogeneityCAD Inputs Collapsible Button
     #################################################
-    self.featureClasses = ("First-Order Statistics", "Morphology and Shape", "Renyi Dimensions", "Geometrical Measures", "Texture: GLCM", "Texture: GLRL")
-    
-    self.firstOrderStatisticsKeys = ("Data Node", "Voxel Count", "Energy", "Entropy" , "Minimum Intensity", "Maximum Intensity", "Mean Intensity", "Median Intensity", "Range", "Mean Absolute Deviation", "Root Mean Square",  "Standard Deviation", "Skewness", "Kurtosis", "Variance", "Uniformity")
-    
-    self.morphologicalStatisticsKeys = ("Volume mm^3", "Volume cc", "Surface Area mm^2", "Surface Area to Volume Ratio", "Compactness 1", "Compactness 2", "Maximum 3D Diameter", "Spherical Disproportion", "Sphericity") 
-    
-    self.renyiDimensionKeys = ("Box-Counting Dimension", "Information Dimension", "Correlation Dimension")
-    
-    self.geometricalMeasuresKeys = ("Extruded Surface Area", "Extruded Volume", "Extruded Surface Area to Volume Ratio", "Extruded Box-Dimension")
-    
-    self.textureGLCMKeys = ("Autocorrelation", "Cluster Prominence", "Cluster Shade", "Cluster Tendency", "Contrast", "Correlation", "Difference Entropy", "Dissimilarity", "Energy", "Entropy(H)", "Homogeneity 1", "Homogeneity 2", "Informational Measure of Correlation 1 (IMC1)", "Informational Measure of Correlation 2 (IMC2)", "Inverse Difference Moment Normalized (IDMN)", "Inverse Difference Normalized (IDN)", "Inverse Variance", "Maximum Probability", "Sum Average", "Sum Entropy", "Sum Variance", "Variance")
-    
-    self.textureGLRLKeys = ("Short Run Emphasis (SRE)", "Long Run Emphasis (LRE)", "Gray Level Non-Uniformity (GLN)", "Run Length Non-Uniformity (RLN)", "Run Percentage (RP)", "Low Gray Level Run Emphasis (LGLRE)", "High Gray Level Run Emphasis (HGLRE)", "Short Run Low Gray Level Emphasis (SRLGLE)", "Short Run High Gray Level Emphasis (SRHGLE)", "Long Run Low Gray Level Emphasis (LRLGLE)", "Long Run High Gray Level Emphasis (LRHGLE)")
+
     
     #################################################
     #HeterogeneityCAD Metrics Collapsible Button
@@ -192,496 +197,79 @@ class HeterogeneityCADWidget:
     self.HeterogeneityCADCollapsibleButton.text = "HeterogeneityCAD Metrics Selection"
     self.layout.addWidget(self.HeterogeneityCADCollapsibleButton)
     self.metricsHeterogeneityCADLayout = qt.QFormLayout(self.HeterogeneityCADCollapsibleButton)
-  
+    
+    ######Custom Metric Widgets###################################################################
+    configGeometricalExtrusion = 'Generate 4D Extruded Object'
+    self.configWidgetGeometricalExtrusion = MetricWidgetHelperLib.MetricWidget()
+    self.configWidgetGeometricalExtrusion.setFont(boldFont)
+    descriptionLabelExtrusion = MetricWidgetHelperLib.MetricDescriptionLabel(configGeometricalExtrusion).getDescription()
+    self.configWidgetGeometricalExtrusion.Setup(configGeometricalExtrusion, descriptionLabelExtrusion)
+    
+    configGLCMMatrix = 'Generate Gray-Level Co-occurrence Matrix'
+    self.configWidgetGLCMMatrix = MetricWidgetHelperLib.MetricWidget()
+    self.configWidgetGLCMMatrix.setFont(boldFont)
+    descriptionLabelGLCMMatrix = MetricWidgetHelperLib.MetricDescriptionLabel(configGLCMMatrix).getDescription()
+    self.configWidgetGLCMMatrix.Setup(configGLCMMatrix, descriptionLabelGLCMMatrix)
+    
+    configGLRLMatrix = 'Generate Gray-Level Run Length Matrix'
+    self.configWidgetGLRLMatrix = MetricWidgetHelperLib.MetricWidget()
+    self.configWidgetGLRLMatrix.setFont(boldFont)
+    descriptionLabelGLRLMatrix = MetricWidgetHelperLib.MetricDescriptionLabel(configGLRLMatrix).getDescription()
+    self.configWidgetGLRLMatrix.Setup(configGLRLMatrix, descriptionLabelGLRLMatrix)
+        
+    #Non Metric Context Menu Assignments(i.e. feature-class specific precalculations like GLCM matrices
+    #make add parameterEditWindowAccessible from object interface           
+    #self.metricContextMenus['Generate 4D Extruded Object'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
+    #self.metricContextMenus['Gray-Level Co-occurrence Matrix'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
+    #self.metricContextMenus['Gray-Level Run Length Matrix'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
+    
+    #Use this line to add new edit parameter options in the context menu for individual metrics:
+    #self.metricContextMenus[<metric name>].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
+    #parent can actually be the tab widget
+    
+    #################################################################################################
     self.tabGroupsHeterogeneityMetrics = qt.QTabWidget()
     self.metricsHeterogeneityCADLayout.addRow(self.tabGroupsHeterogeneityMetrics)
-       
-    ###First Order Statistics Tab
-    self.firstOrderHeterogeneityMetrics = []
-    self.tabFirstOrderStatistics = qt.QWidget()
-    self.LayoutMetricFirstOrderStatistics = qt.QGridLayout()
-    self.tabFirstOrderStatistics.setLayout(self.LayoutMetricFirstOrderStatistics)
-    self.tabGroupsHeterogeneityMetrics.addTab(self.tabFirstOrderStatistics, "First-Order Statistics")
-    
-    self.HeterogeneityMetricFirstOrder1 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder1.setText('Voxel Count')
-    self.HeterogeneityMetricFirstOrder1.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder1)
      
-    self.HeterogeneityMetricFirstOrder2 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder2.setText('Energy')
-    self.HeterogeneityMetricFirstOrder2.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder2)
-
-    self.HeterogeneityMetricFirstOrder3 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder3.setText('Entropy')
-    self.HeterogeneityMetricFirstOrder3.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder3)  
-
-    self.HeterogeneityMetricFirstOrder4 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder4.setText('Minimum Intensity')
-    self.HeterogeneityMetricFirstOrder4.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder4)
-
-    self.HeterogeneityMetricFirstOrder5 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder5.setText('Maximum Intensity')
-    self.HeterogeneityMetricFirstOrder5.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder5)
-
-    self.HeterogeneityMetricFirstOrder6 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder6.setText('Mean Intensity')
-    self.HeterogeneityMetricFirstOrder6.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder6)
-
-    self.HeterogeneityMetricFirstOrder7 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder7.setText('Median Intensity')
-    self.HeterogeneityMetricFirstOrder7.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder7)
-
-    self.HeterogeneityMetricFirstOrder8 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder8.setText('Range')
-    self.HeterogeneityMetricFirstOrder8.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder8)
-
-    self.HeterogeneityMetricFirstOrder9 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder9.setText('Mean Deviation')
-    self.HeterogeneityMetricFirstOrder9.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder9)
-
-    self.HeterogeneityMetricFirstOrder10 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder10.setText('Root Mean Square')
-    self.HeterogeneityMetricFirstOrder10.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder10)
-   
-    self.HeterogeneityMetricFirstOrder11 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder11.setText('Standard Deviation')
-    self.HeterogeneityMetricFirstOrder11.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder11)
-
-    self.HeterogeneityMetricFirstOrder12 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder12.setText('Skewness')
-    self.HeterogeneityMetricFirstOrder12.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder12)
-
-    self.HeterogeneityMetricFirstOrder13 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder13.setText('Kurtosis')
-    self.HeterogeneityMetricFirstOrder13.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder13)
-
-    self.HeterogeneityMetricFirstOrder14 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder14.setText('Variance')
-    self.HeterogeneityMetricFirstOrder14.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder14)
-
-    self.HeterogeneityMetricFirstOrder15 = qt.QCheckBox()  
-    self.HeterogeneityMetricFirstOrder15.setText('Uniformity')
-    self.HeterogeneityMetricFirstOrder15.checked = True
-    self.firstOrderHeterogeneityMetrics.append(self.HeterogeneityMetricFirstOrder15)
- 
-    
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder1, 0, 0)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder2, 0, 1)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder3, 0, 2)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder4, 1, 0)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder5, 1, 1)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder6, 1, 2)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder7, 2, 0)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder8, 2, 1)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder9, 2, 2)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder10, 3, 0)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder11, 3, 1)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder12, 3, 2)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder13, 4, 0)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder14, 4, 1)
-    self.LayoutMetricFirstOrderStatistics.addWidget(self.HeterogeneityMetricFirstOrder15, 4, 2)        
-    ####
-       
-    ####Morphological Statistics Tab
-    self.morphologicalHeterogeneityMetrics = []
-    self.LayoutMetricMorphologicalStatisticsDimensions = qt.QGridLayout()
-    self.tabMorphologicalStatistics = qt.QWidget()
-    self.tabMorphologicalStatistics.setLayout(self.LayoutMetricMorphologicalStatisticsDimensions)
-    self.tabGroupsHeterogeneityMetrics.addTab(self.tabMorphologicalStatistics, "Morphology and Shape")
-    
-    self.HeterogeneityMetricMorphologicalStatistics1 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics1.setText('Volume mm^3')
-    self.HeterogeneityMetricMorphologicalStatistics1.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics1)
-    
-    self.HeterogeneityMetricMorphologicalStatistics2 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics2.setText('Volume cc')
-    self.HeterogeneityMetricMorphologicalStatistics2.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics2)
-    
-    self.HeterogeneityMetricMorphologicalStatistics3 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics3.setText('Surface Area mm^2')
-    self.HeterogeneityMetricMorphologicalStatistics3.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics3)
-    
-    self.HeterogeneityMetricMorphologicalStatistics4 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics4.setText('Surface:Volume Ratio')
-    self.HeterogeneityMetricMorphologicalStatistics4.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics4)
-
-    self.HeterogeneityMetricMorphologicalStatistics5 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics5.setText('Compactness 1')
-    self.HeterogeneityMetricMorphologicalStatistics5.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics5)
-    
-    self.HeterogeneityMetricMorphologicalStatistics6 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics6.setText('Compactness 2')
-    self.HeterogeneityMetricMorphologicalStatistics6.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics6)
-    
-    self.HeterogeneityMetricMorphologicalStatistics7 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics7.setText('Maximum 3D Diameter')
-    self.HeterogeneityMetricMorphologicalStatistics7.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics7)
-    
-    self.HeterogeneityMetricMorphologicalStatistics8 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics8.setText('Spherical Disproportion')
-    self.HeterogeneityMetricMorphologicalStatistics8.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics8)
-    
-    self.HeterogeneityMetricMorphologicalStatistics9 = qt.QCheckBox()  
-    self.HeterogeneityMetricMorphologicalStatistics9.setText('Sphericity')
-    self.HeterogeneityMetricMorphologicalStatistics9.checked = True
-    self.morphologicalHeterogeneityMetrics.append(self.HeterogeneityMetricMorphologicalStatistics9)
+    gridWidth = 3
+    gridHeight = 9
+    for featureClass in self.featureClassKeys:
+      tabFeatureClass = qt.QWidget()
+      tabLayoutFeatureClass = qt.QGridLayout()
+      tabFeatureClass.setLayout(tabLayoutFeatureClass)
+      self.tabGroupsHeterogeneityMetrics.addTab(tabFeatureClass, featureClass)
       
-   
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics1,0,0)
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics2,0,1)
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics3,0,2)
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics4,1,0)
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics5,1,1)
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics6,1,2)
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics7,2,0)
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics8,2,1)
-    self.LayoutMetricMorphologicalStatisticsDimensions.addWidget(self.HeterogeneityMetricMorphologicalStatistics9,2,2)
-    ####
-
-   
-    ####Renyi Dimensions Tab
-    self.renyiHeterogeneityMetrics = []
-    self.LayoutMetricRenyiDimensions = qt.QGridLayout()
-    self.tabRenyiDimensions = qt.QWidget()
-    self.tabRenyiDimensions.setLayout(self.LayoutMetricRenyiDimensions)
-    self.tabGroupsHeterogeneityMetrics.addTab(self.tabRenyiDimensions, "Renyi Dimensions")
-    
-    self.HeterogeneityMetricRenyi1 = qt.QCheckBox()  
-    self.HeterogeneityMetricRenyi1.setText('Box-Counting Dimension')
-    self.HeterogeneityMetricRenyi1.checked = True
-    self.renyiHeterogeneityMetrics.append(self.HeterogeneityMetricRenyi1)
-    
-    self.HeterogeneityMetricRenyi2 = qt.QCheckBox()  
-    self.HeterogeneityMetricRenyi2.setText('Information Dimension')
-    self.HeterogeneityMetricRenyi2.checked = True
-    self.renyiHeterogeneityMetrics.append(self.HeterogeneityMetricRenyi2)
-    
-    self.HeterogeneityMetricRenyi3 = qt.QCheckBox()  
-    self.HeterogeneityMetricRenyi3.setText('Correlation Dimension')
-    self.HeterogeneityMetricRenyi3.checked = True
-    self.renyiHeterogeneityMetrics.append(self.HeterogeneityMetricRenyi3)
-  
-   
-    self.LayoutMetricRenyiDimensions.addWidget(self.HeterogeneityMetricRenyi1,0,0)
-    self.LayoutMetricRenyiDimensions.addWidget(self.HeterogeneityMetricRenyi2,0,1)
-    self.LayoutMetricRenyiDimensions.addWidget(self.HeterogeneityMetricRenyi3,1,0)
-    ####
-    
-    ####Geometrical Measures Tab
-    self.geometricalHeterogeneityMetrics = []
-    self.LayoutMetricGeometricalMeasures = qt.QGridLayout()
-    self.tabGeometricalMeasures = qt.QWidget()
-    self.tabGeometricalMeasures.setLayout(self.LayoutMetricGeometricalMeasures)
-    self.tabGroupsHeterogeneityMetrics.addTab(self.tabGeometricalMeasures, "Geometrical Measures")
-    
-    #
-    self.HeterogeneityMetricGeometricalExtrusion = qt.QCheckBox()
-    self.HeterogeneityMetricGeometricalExtrusion.setFont(boldFont)
-    self.HeterogeneityMetricGeometricalExtrusion.setText('Generate 4D Extruded Object')
-    self.HeterogeneityMetricGeometricalExtrusion.checked = True
-    #
-    
-    self.HeterogeneityMetricGeometrical1 = qt.QCheckBox()  
-    self.HeterogeneityMetricGeometrical1.setText('Extruded Surface Area')
-    self.HeterogeneityMetricGeometrical1.checked = True
-    self.geometricalHeterogeneityMetrics.append(self.HeterogeneityMetricGeometrical1)
-    
-    self.HeterogeneityMetricGeometrical2 = qt.QCheckBox()  
-    self.HeterogeneityMetricGeometrical2.setText('Extruded Volume')
-    self.HeterogeneityMetricGeometrical2.checked = True
-    self.geometricalHeterogeneityMetrics.append(self.HeterogeneityMetricGeometrical2)
-    
-    self.HeterogeneityMetricGeometrical3 = qt.QCheckBox()  
-    self.HeterogeneityMetricGeometrical3.setText('Extruded Surface:Volume Ratio')
-    self.HeterogeneityMetricGeometrical3.checked = True
-    self.geometricalHeterogeneityMetrics.append(self.HeterogeneityMetricGeometrical3)
-    
-    self.LayoutMetricGeometricalMeasures.addWidget(self.HeterogeneityMetricGeometricalExtrusion,0,0)   
-    self.LayoutMetricGeometricalMeasures.addWidget(self.HeterogeneityMetricGeometrical1,1,0)
-    self.LayoutMetricGeometricalMeasures.addWidget(self.HeterogeneityMetricGeometrical2,1,1)
-    self.LayoutMetricGeometricalMeasures.addWidget(self.HeterogeneityMetricGeometrical3,2,0)
-    ####
-    
-    
-    #### Texture-GLCM Tab
-    self.textureGLCMHeterogeneityMetrics = []
-    self.LayoutMetricGLCM = qt.QGridLayout()
-    self.tabGLCM = qt.QWidget()
-    self.tabGLCM.setLayout(self.LayoutMetricGLCM)
-    self.tabGroupsHeterogeneityMetrics.addTab(self.tabGLCM, "Texture: GLCM")
-    
-    #
-    self.HeterogeneityMetricGLCMMatrix = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCMMatrix.setFont(boldFont)
-    self.HeterogeneityMetricGLCMMatrix.setText('Generate Gray-Level Co-occurrence Matrix')   
-    self.HeterogeneityMetricGLCMMatrix.checked = True
-    #
-    
-    self.HeterogeneityMetricGLCM1 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM1.setText('Autocorrelation')
-    self.HeterogeneityMetricGLCM1.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM1)
-    
-    self.HeterogeneityMetricGLCM2 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM2.setText('Cluster Prominence')
-    self.HeterogeneityMetricGLCM2.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM2)
-    
-    self.HeterogeneityMetricGLCM3 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM3.setText('Cluster Shade')
-    self.HeterogeneityMetricGLCM3.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM3)
-    
-    self.HeterogeneityMetricGLCM4 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM4.setText('Cluster Tendency')
-    self.HeterogeneityMetricGLCM4.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM4)
-    
-    self.HeterogeneityMetricGLCM5 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM5.setText('Contrast')
-    self.HeterogeneityMetricGLCM5.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM5)
-    
-    self.HeterogeneityMetricGLCM6 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM6.setText('Correlation')
-    self.HeterogeneityMetricGLCM6.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM6)
-    
-    self.HeterogeneityMetricGLCM7 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM7.setText('Difference Entropy')
-    self.HeterogeneityMetricGLCM7.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM7)
-    
-    self.HeterogeneityMetricGLCM8 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM8.setText('Dissimilarity')
-    self.HeterogeneityMetricGLCM8.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM8)
-    
-    self.HeterogeneityMetricGLCM9 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM9.setText('Energy (GLCM)')
-    self.HeterogeneityMetricGLCM9.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM9)
-    
-    self.HeterogeneityMetricGLCM10 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM10.setText('Entropy(GLCM)')
-    self.HeterogeneityMetricGLCM10.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM10)
-    
-    self.HeterogeneityMetricGLCM11 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM11.setText('Homogeneity 1')
-    self.HeterogeneityMetricGLCM11.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM11)
-    
-    self.HeterogeneityMetricGLCM12 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM12.setText('Homogeneity 2')
-    self.HeterogeneityMetricGLCM12.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM12)
-    
-    self.HeterogeneityMetricGLCM13 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM13.setText('IMC1')
-    self.HeterogeneityMetricGLCM13.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM13)
-    self.HeterogeneityMetricGLCM13.setToolTip('Informational Measure of Correlation 1 (IMC1)')
-    
-    # disabled, error in calculations
-    self.HeterogeneityMetricGLCM14 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM14.setText('IMC2')
-    self.HeterogeneityMetricGLCM14.checked = False #True
-    self.HeterogeneityMetricGLCM14.enabled = False
-    #self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM14)
-    self.HeterogeneityMetricGLCM14.setToolTip('Informational Measure of Correlation 2 (IMC2)')
-  
-    self.HeterogeneityMetricGLCM15 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM15.setText('IDMN') 
-    self.HeterogeneityMetricGLCM15.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM15)
-    self.HeterogeneityMetricGLCM15.setToolTip('Inverse Difference Moment Normalized (IDMN)')
-
-    self.HeterogeneityMetricGLCM16 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM16.setText('IDN')    
-    self.HeterogeneityMetricGLCM16.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM16)
-    self.HeterogeneityMetricGLCM16.setToolTip('Inverse Difference Normalized (IDN)')
- 
-    self.HeterogeneityMetricGLCM17 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM17.setText('Inverse Variance')
-    self.HeterogeneityMetricGLCM17.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM17)
-    
-    self.HeterogeneityMetricGLCM18 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM18.setText('Maximum Probability')
-    self.HeterogeneityMetricGLCM18.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM18)
-    
-    self.HeterogeneityMetricGLCM19 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM19.setText('Sum Average')
-    self.HeterogeneityMetricGLCM19.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM19)
-    
-    self.HeterogeneityMetricGLCM20 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM20.setText('Sum Entropy')
-    self.HeterogeneityMetricGLCM20.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM20)
-    
-    self.HeterogeneityMetricGLCM21 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM21.setText('Sum Variance')
-    self.HeterogeneityMetricGLCM21.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM21)
-    
-    self.HeterogeneityMetricGLCM22 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLCM22.setText('Variance (GLCM)')
-    self.HeterogeneityMetricGLCM22.checked = True
-    self.textureGLCMHeterogeneityMetrics.append(self.HeterogeneityMetricGLCM22)
-    
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCMMatrix, 0, 0)
-    
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM1, 1, 0)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM2, 1, 1)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM3, 1, 2)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM4, 2, 0)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM5, 2, 1)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM6, 2, 2)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM7, 3, 0)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM8, 3, 1)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM9, 3, 2)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM10, 4, 0)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM11, 4, 1)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM12, 4, 2)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM13, 5, 0)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM14, 5, 1)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM15, 5, 2)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM16, 6, 0)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM17, 6, 1)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM18, 6, 2)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM19, 7, 0)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM20, 7, 1)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM21, 7, 2)
-    self.LayoutMetricGLCM.addWidget(self.HeterogeneityMetricGLCM22, 8, 0)
-    ####
+      featureList = (feature for feature in self.featureClassKeys[featureClass])
+      gridLayoutCoordinates = ((row,col) for col in range(gridWidth) for row in range(1,gridHeight))
+      
+      if featureClass == "Geometrical Measures":
+        tabLayoutFeatureClass.addWidget(self.configWidgetGeometricalExtrusion, 0, 0)
+      elif featureClass == "Texture: GLCM":
+        tabLayoutFeatureClass.addWidget(self.configWidgetGLCMMatrix, 0, 0)
+      elif featureClass == "Texture: GLRL":
+        tabLayoutFeatureClass.addWidget(self.configWidgetGLRLMatrix, 0, 0)
+            
+      while True:
+        feature = next(featureList, None)
+        row, col = next(gridLayoutCoordinates, None)
+        if feature is None or row is None or col is None:
+          break
         
+        description = MetricWidgetHelperLib.MetricDescriptionLabel(feature).getDescription()
+        checkbox = MetricWidgetHelperLib.MetricWidget()
+        
+        if feature == "IMC2": 
+          checkbox.Setup(feature, description, check=False) 
+        else: 
+          checkbox.Setup(feature, description)
+            
+        self.featureWidgets[featureClass].append(checkbox)
+        tabLayoutFeatureClass.addWidget(checkbox, row, col)
     
-    #### Texture-GLRL Tab
-    self.textureGLRLHeterogeneityMetrics = []
-    self.LayoutMetricGLRL = qt.QGridLayout()
-    self.tabGLRL = qt.QWidget()
-    self.tabGLRL.setLayout(self.LayoutMetricGLRL)
-    self.tabGroupsHeterogeneityMetrics.addTab(self.tabGLRL, "Texture: GLRL")
-    
-    #
-    self.HeterogeneityMetricGLRLMatrix = qt.QCheckBox()
-    self.HeterogeneityMetricGLRLMatrix.setFont(boldFont)
-    self.HeterogeneityMetricGLRLMatrix.setText('Generate Gray-Level Run Length Matrix')
-    self.HeterogeneityMetricGLRLMatrix.checked = True
-    #
- 
-    self.HeterogeneityMetricGLRL1 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL1.setText('SRE')
-    self.HeterogeneityMetricGLRL1.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL1)
-    self.HeterogeneityMetricGLRL1.setToolTip('Short Run Emphasis (SRE)')
+    # note: try using itertools list merging with lists of GLRL diagonal    
+    self.heterogeneityMetricWidgets = list(itertools.chain.from_iterable(self.featureWidgets.values())) #reduce(lambda x,y: x+y, self.featureWidgets.values())
 
-    self.HeterogeneityMetricGLRL2 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL2.setText('LRE')
-    self.HeterogeneityMetricGLRL2.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL2)
-    self.HeterogeneityMetricGLRL2.setToolTip('Long Run Emphasis (LRE)')
-    
-    self.HeterogeneityMetricGLRL3 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL3.setText('GLN')
-    self.HeterogeneityMetricGLRL3.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL3)
-    self.HeterogeneityMetricGLRL3.setToolTip('Gray Level Non-Uniformity (GLN)')
-    
-    self.HeterogeneityMetricGLRL4 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL4.setText('RLN')
-    self.HeterogeneityMetricGLRL4.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL4)
-    self.HeterogeneityMetricGLRL4.setToolTip('Run Length Non-Uniformity (RLN)')
-    
-    self.HeterogeneityMetricGLRL5 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL5.setText('RP')
-    self.HeterogeneityMetricGLRL5.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL5)
-    self.HeterogeneityMetricGLRL5.setToolTip('Run Percentage (RP)')
-    
-    self.HeterogeneityMetricGLRL6 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL6.setText('LGLRE')
-    self.HeterogeneityMetricGLRL6.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL6)
-    self.HeterogeneityMetricGLRL6.setToolTip('Low Gray Level Run Emphasis (LGLRE)')
-    
-    self.HeterogeneityMetricGLRL7 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL7.setText('HGLRE')
-    self.HeterogeneityMetricGLRL7.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL7)
-    self.HeterogeneityMetricGLRL7.setToolTip('High Gray Level Run Emphasis (HGLRE)')
-    
-    self.HeterogeneityMetricGLRL8 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL8.setText('SRLGLE')
-    self.HeterogeneityMetricGLRL8.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL8)
-    self.HeterogeneityMetricGLRL8.setToolTip('Short Run Low Gray Level Emphasis (SRLGLE)')
-    
-    self.HeterogeneityMetricGLRL9 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL9.setText('SRHGLE')
-    self.HeterogeneityMetricGLRL9.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL9)
-    self.HeterogeneityMetricGLRL9.setToolTip('Short Run High Gray Level Emphasis (SRHGLE)')
-    
-    self.HeterogeneityMetricGLRL10 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL10.setText('LRLGLE')
-    self.HeterogeneityMetricGLRL10.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL10)
-    self.HeterogeneityMetricGLRL10.setToolTip('Long Run Low Gray Level Emphasis (LRLGLE)')
 
-    self.HeterogeneityMetricGLRL11 = qt.QCheckBox()  
-    self.HeterogeneityMetricGLRL11.setText('LRHGLE')
-    self.HeterogeneityMetricGLRL11.checked = True
-    self.textureGLRLHeterogeneityMetrics.append(self.HeterogeneityMetricGLRL11)
-    self.HeterogeneityMetricGLRL11.setToolTip('Long Run High Gray Level Emphasis (LRHGLE)')
-    
-    
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRLMatrix, 0, 0)
-    
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL1, 1, 0)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL2, 1, 1)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL3, 1, 2)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL4, 2, 0)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL5, 2, 1)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL6, 2, 2)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL7, 3, 0)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL8, 3, 1)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL9, 3, 2)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL10, 4, 0)
-    self.LayoutMetricGLRL.addWidget(self.HeterogeneityMetricGLRL11, 4, 1)
-    ####
-    
-    self.heterogeneityMetricWidgets = (self.firstOrderHeterogeneityMetrics + self.morphologicalHeterogeneityMetrics
-                                      + self.renyiHeterogeneityMetrics + self.geometricalHeterogeneityMetrics 
-                                      + self.textureGLCMHeterogeneityMetrics + self.textureGLRLHeterogeneityMetrics)
-    
     # Metric Buttons Frame and Layout
     self.metricButtonFrame = qt.QFrame(self.HeterogeneityCADCollapsibleButton)
     self.metricButtonFrame.setLayout(qt.QHBoxLayout())
@@ -725,12 +313,10 @@ class HeterogeneityCADWidget:
         
     ####################
     #Connections
-    ####################      
-    self.createContextMenus()
-    
-    self.HeterogeneityMetricGeometricalExtrusion.connect('clicked(bool)', self.onGeometricalExtrusionToggled)
-    self.HeterogeneityMetricGLCMMatrix.connect('clicked(bool)', self.onGLCMMatrixToggled)
-    self.HeterogeneityMetricGLRLMatrix.connect('clicked(bool)', self.onGLRLMatrixToggled)
+    ####################   
+    self.configWidgetGeometricalExtrusion.connect('clicked(bool)', self.onGeometricalExtrusionToggled)
+    self.configWidgetGLCMMatrix.connect('clicked(bool)', self.onGLCMMatrixToggled)
+    self.configWidgetGLRLMatrix.connect('clicked(bool)', self.onGLRLMatrixToggled)
     
     self.HeterogeneityCADButton.connect('clicked()', self.onHeterogeneityCADButtonClicked)
     self.saveButton.connect('clicked()', self.onSave)
@@ -741,69 +327,36 @@ class HeterogeneityCADWidget:
   #Checkbox Toggles  
   def onGeometricalExtrusionToggled(self, checked):
     if checked:
-      for metricWidget in self.geometricalHeterogeneityMetrics:
+      for metricWidget in self.featureWidgets["Geometrical Measures"]:
         metricWidget.enabled = True
         metricWidget.checked = True
     else:
-      for metricWidget in self.geometricalHeterogeneityMetrics:
+      for metricWidget in self.featureWidgets["Geometrical Measures"]:
         metricWidget.enabled = False
         metricWidget.checked = False
           
   def onGLCMMatrixToggled(self, checked):
     if checked:
-      for metricWidget in self.textureGLCMHeterogeneityMetrics:
+      for metricWidget in self.featureWidgets["Texture: GLCM"]:
         metricWidget.enabled = True
         metricWidget.checked = True
     else:
-      for metricWidget in self.textureGLCMHeterogeneityMetrics:
+      for metricWidget in self.featureWidgets["Texture: GLCM"]:
         metricWidget.enabled = False
         metricWidget.checked = False
   
   def onGLRLMatrixToggled(self, checked):
     if checked:
-      for metricWidget in self.textureGLRLHeterogeneityMetrics:
+      for metricWidget in self.featureWidgets["Texture: GLRL"]:
         metricWidget.enabled = True
         metricWidget.checked = True
     else:
-      for metricWidget in self.textureGLRLHeterogeneityMetrics:
+      for metricWidget in self.featureWidgets["Texture: GLRL"]:
         metricWidget.enabled = False
         metricWidget.checked = False
   
-  #Context menu generation  
-  def createContextMenus(self):
-    for metricWidget in self.heterogeneityMetricWidgets:
-      metricWidget.setContextMenuPolicy(3)
-      metricName = metricWidget.text
-      descriptionLabel = MetricWidgetHelperLib.MetricDescriptionLabel(metricWidget).getDescription()    
-      self.metricContextMenus[metricName] = MetricWidgetHelperLib.ContextMenu(metricWidget, descriptionLabel)           
-      metricWidget.customContextMenuRequested.connect(lambda point, metricName=metricName: self.metricContextMenus[metricName].connectAndMap(point))
-    
-    #Non Metric Context Menu Assignments(i.e. feature-class specific precalculations like GLCM matrices         
-    self.HeterogeneityMetricGeometricalExtrusion.setContextMenuPolicy(3)
-    descriptionLabelExtrusion = MetricWidgetHelperLib.MetricDescriptionLabel(self.HeterogeneityMetricGeometricalExtrusion).getDescription()    
-    self.metricContextMenus['Generate 4D Extruded Object'] = MetricWidgetHelperLib.ContextMenu(self.HeterogeneityMetricGeometricalExtrusion, descriptionLabelExtrusion)
-    self.HeterogeneityMetricGeometricalExtrusion.customContextMenuRequested.connect(self.metricContextMenus['Generate 4D Extruded Object'].connectAndMap)
-    self.metricContextMenus['Generate 4D Extruded Object'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
-    
-    self.HeterogeneityMetricGLCMMatrix.setContextMenuPolicy(3)
-    descriptionLabelGLCMMatrix = MetricWidgetHelperLib.MetricDescriptionLabel(self.HeterogeneityMetricGLCMMatrix).getDescription()
-    self.metricContextMenus['Gray-Level Co-occurrence Matrix'] = MetricWidgetHelperLib.ContextMenu(self.HeterogeneityMetricGLCMMatrix, descriptionLabelGLCMMatrix)
-    self.HeterogeneityMetricGLCMMatrix.customContextMenuRequested.connect(self.metricContextMenus['Gray-Level Co-occurrence Matrix'].connectAndMap)
-    self.metricContextMenus['Gray-Level Co-occurrence Matrix'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
-       
-    self.HeterogeneityMetricGLRLMatrix.setContextMenuPolicy(3)
-    descriptionLabelGLRLMatrix = MetricWidgetHelperLib.MetricDescriptionLabel(self.HeterogeneityMetricGLRLMatrix).getDescription()
-    self.metricContextMenus['Gray-Level Run Length Matrix'] = MetricWidgetHelperLib.ContextMenu(self.HeterogeneityMetricGLRLMatrix, descriptionLabelGLRLMatrix)
-    self.HeterogeneityMetricGLRLMatrix.customContextMenuRequested.connect(self.metricContextMenus['Gray-Level Run Length Matrix'].connectAndMap)
-    self.metricContextMenus['Gray-Level Run Length Matrix'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
-    
-    #Use this line to add new edit parameter options in the context menu for individual metrics:
-    #self.metricContextMenus[<metric name>].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
-    
-    #Add dictionary to relate metrics to a list of their parameters+values (as arguments to supply to metric functions)  
 
-  ##########LOGIC##########
-            
+  ##########LOGIC##########            
   def onAddDataNodeButtonClicked(self):
     self.inputDataNodes.append(self.inputSelectorVolHet.currentNode())
     self.dataNodesListWidget.addItem(self.inputSelectorVolHet.currentNode().GetName())
@@ -994,7 +547,6 @@ class HeterogeneityCADWidget:
     globals()[widgetName.lower()].setup()
     
 
-
 class FeatureExtractionLogic:
  
   def __init__(self, dataNode, labelNode, keys):
@@ -1021,7 +573,7 @@ class FeatureExtractionLogic:
     self.matrix[matrixCoordinates] = self.targetVoxels
     
     # Get Histogram data
-    bins, arrayDiscreteValues, numDiscreteValues = self.histogramData(self.targetVoxels)
+    bins, arrayDiscreteValues, numDiscreteValues = self.getHistogramData(self.targetVoxels)
     
     ### Manage feature classes for Heterogeneity metric calculations     
     # Node Information
@@ -1076,7 +628,7 @@ class FeatureExtractionLogic:
     values = arrayDataNode[coordinates].astype('int64')
     return(values, coordinates)
     
-  def histogramData(self, voxelArray):
+  def getHistogramData(self, voxelArray):
     # with np.histogram(), all but the last bin is half-open, so make one extra bin container
     binContainers = numpy.arange(voxelArray.min(), voxelArray.max()+2)
     bins = numpy.histogram(voxelArray, bins=binContainers)[0] # frequencies 
