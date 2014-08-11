@@ -65,16 +65,17 @@ class HeterogeneityCADWidget:
     # map feature class to list of features
     self.featureClassKeys = collections.OrderedDict()
     self.featureClassKeys["First-Order Statistics"] = ["Voxel Count", "Energy", "Entropy" , "Minimum Intensity", "Maximum Intensity", "Mean Intensity", "Median Intensity", "Range", "Mean Deviation", "Root Mean Square",  "Standard Deviation", "Skewness", "Kurtosis", "Variance", "Uniformity"]
-    self.featureClassKeys["Morphology and Shape"] = ["Volume mm^3", "Volume cc", "Surface Area mm^2", "Surface:Volume Ratio", "Compactness 1", "Compactness 2", "Maximum 3D Diameter", "Spherical Disproportion", "Sphericity"]
+    self.featureClassKeys["Morphology and Shape"] = ["Volume mm^3", "Volume cc", "Surface Area mm^2", "Surface:Volume Ratio", "Compactness 1", "Compactness 2", "Maximum 3D Diameter", "Spherical Disproportion", "Sphericity"]  
+    self.featureClassKeys["Texture: GLCM"] = ["Autocorrelation", "Cluster Prominence", "Cluster Shade", "Cluster Tendency", "Contrast", "Correlation", "Difference Entropy", "Dissimilarity", "Energy (GLCM)", "Entropy(GLCM)", "Homogeneity 1", "Homogeneity 2", "IMC1", "IDMN", "IDN", "Inverse Variance", "Maximum Probability", "Sum Average", "Sum Entropy", "Sum Variance", "Variance (GLCM)"] #IMC2 missing
+    self.featureClassKeys["Texture: GLRL"] = ["SRE", "LRE", "GLN", "RLN", "RP", "LGLRE", "HGLRE", "SRLGLE", "SRHGLE", "LRLGLE", "LRHGLE"]
     self.featureClassKeys["Renyi Dimensions"] = ["Box-Counting Dimension", "Information Dimension", "Correlation Dimension"]
     self.featureClassKeys["Geometrical Measures"] = ["Extruded Surface Area", "Extruded Volume", "Extruded Surface:Volume Ratio"]
-    self.featureClassKeys["Texture: GLCM"] = ["Autocorrelation", "Cluster Prominence", "Cluster Shade", "Cluster Tendency", "Contrast", "Correlation", "Difference Entropy", "Dissimilarity", "Energy (GLCM)", "Entropy(GLCM)", "Homogeneity 1", "Homogeneity 2", "IMC1", "IMC2", "IDMN", "IDN", "Inverse Variance", "Maximum Probability", "Sum Average", "Sum Entropy", "Sum Variance", "Variance (GLCM)"]
-    self.featureClassKeys["Texture: GLRL"] = ["SRE", "LRE", "GLN", "RLN", "RP", "LGLRE", "HGLRE", "SRLGLE", "SRHGLE", "LRLGLE", "LRHGLE"]
     
     # map feature class to list of feature checkbox widgets
     self.featureWidgets = collections.OrderedDict()
     for key in self.featureClassKeys.keys():
       self.featureWidgets[key] = list()   
+ 
  
   def setup(self):
     
@@ -197,57 +198,24 @@ class HeterogeneityCADWidget:
     self.HeterogeneityCADCollapsibleButton.text = "HeterogeneityCAD Metrics Selection"
     self.layout.addWidget(self.HeterogeneityCADCollapsibleButton)
     self.metricsHeterogeneityCADLayout = qt.QFormLayout(self.HeterogeneityCADCollapsibleButton)
-    
-    ######Custom Metric Widgets###################################################################
-    configGeometricalExtrusion = 'Generate 4D Extruded Object'
-    self.configWidgetGeometricalExtrusion = MetricWidgetHelperLib.MetricWidget()
-    self.configWidgetGeometricalExtrusion.setFont(boldFont)
-    descriptionLabelExtrusion = MetricWidgetHelperLib.MetricDescriptionLabel(configGeometricalExtrusion).getDescription()
-    self.configWidgetGeometricalExtrusion.Setup(configGeometricalExtrusion, descriptionLabelExtrusion)
-    
-    configGLCMMatrix = 'Generate Gray-Level Co-occurrence Matrix'
-    self.configWidgetGLCMMatrix = MetricWidgetHelperLib.MetricWidget()
-    self.configWidgetGLCMMatrix.setFont(boldFont)
-    descriptionLabelGLCMMatrix = MetricWidgetHelperLib.MetricDescriptionLabel(configGLCMMatrix).getDescription()
-    self.configWidgetGLCMMatrix.Setup(configGLCMMatrix, descriptionLabelGLCMMatrix)
-    
-    configGLRLMatrix = 'Generate Gray-Level Run Length Matrix'
-    self.configWidgetGLRLMatrix = MetricWidgetHelperLib.MetricWidget()
-    self.configWidgetGLRLMatrix.setFont(boldFont)
-    descriptionLabelGLRLMatrix = MetricWidgetHelperLib.MetricDescriptionLabel(configGLRLMatrix).getDescription()
-    self.configWidgetGLRLMatrix.Setup(configGLRLMatrix, descriptionLabelGLRLMatrix)
-        
-    #Non Metric Context Menu Assignments(i.e. feature-class specific precalculations like GLCM matrices
-    #make add parameterEditWindowAccessible from object interface           
-    #self.metricContextMenus['Generate 4D Extruded Object'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
-    #self.metricContextMenus['Gray-Level Co-occurrence Matrix'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
-    #self.metricContextMenus['Gray-Level Run Length Matrix'].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
-    
-    #Use this line to add new edit parameter options in the context menu for individual metrics:
-    #self.metricContextMenus[<metric name>].addParameterEditWindow(self.HeterogeneityCADCollapsibleButton, "<parameter name>") 
-    #parent can actually be the tab widget
-    
+      
     #################################################################################################
-    self.tabGroupsHeterogeneityMetrics = qt.QTabWidget()
+    self.tabGroupsHeterogeneityMetrics = MetricWidgetHelperLib.CheckableTabWidget()
     self.metricsHeterogeneityCADLayout.addRow(self.tabGroupsHeterogeneityMetrics)
      
     gridWidth = 3
     gridHeight = 9
     for featureClass in self.featureClassKeys:
+      if featureClass == "First-Order Statistics" or featureClass == "Morphology and Shape":
+        check = True
+      else:
+        check = False
+    
       tabFeatureClass = qt.QWidget()
-      tabLayoutFeatureClass = qt.QGridLayout()
-      tabFeatureClass.setLayout(tabLayoutFeatureClass)
-      self.tabGroupsHeterogeneityMetrics.addTab(tabFeatureClass, featureClass)
-      
+      tabFeatureClass.setLayout(qt.QGridLayout())
+          
       featureList = (feature for feature in self.featureClassKeys[featureClass])
-      gridLayoutCoordinates = ((row,col) for col in range(gridWidth) for row in range(1,gridHeight))
-      
-      if featureClass == "Geometrical Measures":
-        tabLayoutFeatureClass.addWidget(self.configWidgetGeometricalExtrusion, 0, 0)
-      elif featureClass == "Texture: GLCM":
-        tabLayoutFeatureClass.addWidget(self.configWidgetGLCMMatrix, 0, 0)
-      elif featureClass == "Texture: GLRL":
-        tabLayoutFeatureClass.addWidget(self.configWidgetGLRLMatrix, 0, 0)
+      gridLayoutCoordinates = ((row,col) for col in range(gridWidth) for row in range(gridHeight))
             
       while True:
         feature = next(featureList, None)
@@ -255,26 +223,32 @@ class HeterogeneityCADWidget:
         if feature is None or row is None or col is None:
           break
         
-        description = MetricWidgetHelperLib.MetricDescriptionLabel(feature).getDescription()
-        checkbox = MetricWidgetHelperLib.MetricWidget()
+        description = MetricWidgetHelperLib.MetricDescriptionLabel(feature).getDescription() # migrate to helper
+        checkbox = MetricWidgetHelperLib.FeatureWidget()
         
-        if feature == "IMC2": 
-          checkbox.Setup(feature, description, check=False) 
-        else: 
-          checkbox.Setup(feature, description)
+        checkbox.Setup(feature, description, checkStatus=check)
             
         self.featureWidgets[featureClass].append(checkbox)
-        tabLayoutFeatureClass.addWidget(checkbox, row, col)
+        tabFeatureClass.layout().addWidget(checkbox, row, col)
+             
+      self.tabGroupsHeterogeneityMetrics.addTab(tabFeatureClass, featureClass, self.featureWidgets[featureClass], checkStatus=check)
+    
+    # top-level feature class parameters
+    self.tabGroupsHeterogeneityMetrics.addParameter("Geometrical Measures", "Extrusion Parameters")
+    self.tabGroupsHeterogeneityMetrics.addParameter("Texture: GLCM", "GLCM Matrix Parameters")
+    self.tabGroupsHeterogeneityMetrics.addParameter("Texture: GLRL", "GLRL Matrix Parameters")
+    # add capabilities for invidual metric parameters
     
     # note: try using itertools list merging with lists of GLRL diagonal    
-    self.heterogeneityMetricWidgets = list(itertools.chain.from_iterable(self.featureWidgets.values())) #reduce(lambda x,y: x+y, self.featureWidgets.values())
-
+    self.heterogeneityMetricWidgets = list(itertools.chain.from_iterable(self.featureWidgets.values())) 
+    # or reduce(lambda x,y: x+y, self.featureWidgets.values())
 
     # Metric Buttons Frame and Layout
     self.metricButtonFrame = qt.QFrame(self.HeterogeneityCADCollapsibleButton)
     self.metricButtonFrame.setLayout(qt.QHBoxLayout())
     
-    self.metricsHeterogeneityCADLayout.addRow(self.metricButtonFrame)    
+    self.metricsHeterogeneityCADLayout.addRow(self.metricButtonFrame)
+       
     ####HeterogeneityCAD Apply Button
     self.HeterogeneityCADButton = qt.QPushButton("Apply HeterogeneityCAD", self.metricButtonFrame)
     self.HeterogeneityCADButton.toolTip = "Analyze input volume using selected Heterogeneity Metrics."
@@ -313,47 +287,12 @@ class HeterogeneityCADWidget:
         
     ####################
     #Connections
-    ####################   
-    self.configWidgetGeometricalExtrusion.connect('clicked(bool)', self.onGeometricalExtrusionToggled)
-    self.configWidgetGLCMMatrix.connect('clicked(bool)', self.onGLCMMatrixToggled)
-    self.configWidgetGLRLMatrix.connect('clicked(bool)', self.onGLRLMatrixToggled)
-    
+    ####################     
     self.HeterogeneityCADButton.connect('clicked()', self.onHeterogeneityCADButtonClicked)
     self.saveButton.connect('clicked()', self.onSave)
     ####################
     #End Connections
     ####################
-  
-  #Checkbox Toggles  
-  def onGeometricalExtrusionToggled(self, checked):
-    if checked:
-      for metricWidget in self.featureWidgets["Geometrical Measures"]:
-        metricWidget.enabled = True
-        metricWidget.checked = True
-    else:
-      for metricWidget in self.featureWidgets["Geometrical Measures"]:
-        metricWidget.enabled = False
-        metricWidget.checked = False
-          
-  def onGLCMMatrixToggled(self, checked):
-    if checked:
-      for metricWidget in self.featureWidgets["Texture: GLCM"]:
-        metricWidget.enabled = True
-        metricWidget.checked = True
-    else:
-      for metricWidget in self.featureWidgets["Texture: GLCM"]:
-        metricWidget.enabled = False
-        metricWidget.checked = False
-  
-  def onGLRLMatrixToggled(self, checked):
-    if checked:
-      for metricWidget in self.featureWidgets["Texture: GLRL"]:
-        metricWidget.enabled = True
-        metricWidget.checked = True
-    else:
-      for metricWidget in self.featureWidgets["Texture: GLRL"]:
-        metricWidget.enabled = False
-        metricWidget.checked = False
   
 
   ##########LOGIC##########            
@@ -545,7 +484,7 @@ class HeterogeneityCADWidget:
     globals()[widgetName.lower()] = eval(
         'globals()["%s"].%s(parent)' % (moduleName, widgetName))
     globals()[widgetName.lower()].setup()
-    
+
 
 class FeatureExtractionLogic:
  

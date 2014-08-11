@@ -1,2 +1,2 @@
 from MetricDescriptionLabel import *
-from MetricWidget import *
+from FeatureWidget import *

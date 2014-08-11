@@ -79,8 +79,8 @@ class MetricDescriptionLabel:
       self.description += "Correlation Dimension is part of the family of Renyi Dimensions, where q=2 for Renyi Entropy calculations."
     
     
-    elif metricName == "Generate 4D Extruded Object":
-      self.description += "Edit parameters for or Toggle the generation of the extruded, binary 4D object needed to calculate metrics for this class. If this is unchecked, there will be no metrics computed for this Feature Class." # Not a metric   
+    elif metricName == "Geometrical Measures":
+      self.description += "Edit parameters for or Toggle the generation of the extruded, binary 4D object needed to calculate metrics for this class. If this is unchecked, there will be no metrics computed for this Feature Class." 
     elif metricName == "Extruded Surface Area":
       self.description += "Extruded Surface Area is the surface area of the binary object when the image ROI is 'extruded' into 4D, where the parameter or intensity value defines the shape of the Fourth dimension."   
     elif metricName == "Extruded Volume":
@@ -89,7 +89,7 @@ class MetricDescriptionLabel:
       self.description += "Extruded Surface:Volume Ratio is the ratio of the surface area to the volume of the binary object when the image ROI is 'extruded' into 4D, where the parameter or intensity value defines the shape of the Fourth dimension."
     
     
-    elif metricName == "Gray-Level Co-occurrence Matrix":
+    elif metricName == "Texture: GLCM":
       self.description += "Edit parameters for or Toggle the generation of GLCM matrices needed to calculate metrics for this class. If this is unchecked, there will be no metrics computed for this Feature Class."  
     elif metricName == "Autocorrelation":
       self.description += "Autocorrelation is a measure of the magnitude of the fineness and coarseness of texture."
@@ -137,7 +137,7 @@ class MetricDescriptionLabel:
       self.description += "Variance (for GLCM) is the dispersion of the parameter values around the mean of the combinations of reference and neighborhood pixels, with values farther from the mean weighted higher. A high variance indicates greater distances of values from the mean."
     
     
-    elif metricName == "Gray-Level Run Length Matrix":
+    elif metricName == "Texture: GLRL":
      self.description +="Edit parameters for or Toggle the generation of GLRL matrices needed to calculate metrics for this class. If this is unchecked, there will be no metrics computed for this Feature Class."  
     elif metricName == "SRE":
      self.description +="Short Run Emphasis (SRE) is a measure of the distribution of short run lengths, with a greater value indicative of shorter run lengths and more fine textural textures."    
