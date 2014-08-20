@@ -17,6 +17,8 @@ class FeatureDescriptionLabel(qt.QLabel):
     # First-Order Statistics
     if featureName == "Voxel Count":
       self.description += "Voxel Count is the total number of voxels within the ROI of the grayscale image or parameter map."
+    elif featureName == "Gray Levels":
+      self.description += "Gray Levels is a the number of discrete voxel values within the ROI of the grayscale image or parameter map."  
     elif featureName == "Energy":
       self.description += "Energy is a measure of the magnitude of values in an image. A greater amount larger values implies a greater sum of the squares of these values."
     elif featureName == "Entropy":
