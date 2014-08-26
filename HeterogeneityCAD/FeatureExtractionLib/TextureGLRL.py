@@ -22,7 +22,7 @@ class TextureGLRL:
     self.textureFeaturesGLRL["LRLGLE"] = "numpy.mean(numeratorLRLGLE)"
     self.textureFeaturesGLRL["LRHGLE"] = "numpy.mean(numeratorLRHGLE)"
     
-    self. ii = ii
+    self.ii = ii
     self.parameterMatrix = parameterMatrix
     self.parameterMatrixCoordinates = parameterMatrixCoordinates
     self.parameterValues = parameterValues
@@ -108,22 +108,26 @@ class TextureGLRL:
           numeratorLRLGLE[theta] += ( (Pval*((j+1)**2)) / ((i+1)**2) ) 
           numeratorLRHGLE[theta] += ( (Pval*((j+1)**2))*((i+1)**2) )
           
-                     
-      numeratorSRE[theta] = numeratorSRE[theta]/sum_P[theta]
-      numeratorLRE[theta] = numeratorLRE[theta]/sum_P[theta]
-      
-      numeratorGLN[theta] = numeratorGLN[theta]/sum_P[theta]
-      numeratorRLN[theta] = numeratorRLN[theta]/sum_P[theta]     
       runPercentage[theta] = (sum_P[theta]/Np) 
+      
+      # check for the event that there are no run lengths
+      # in the direction theta to avoid divide by zero errors
+      if(sum_P[theta] != 0):  
+             
+        numeratorSRE[theta] = numeratorSRE[theta]/sum_P[theta]
+        numeratorLRE[theta] = numeratorLRE[theta]/sum_P[theta]
+      
+        numeratorGLN[theta] = numeratorGLN[theta]/sum_P[theta]
+        numeratorRLN[theta] = numeratorRLN[theta]/sum_P[theta]     
                      
-      numeratorLGLRE[theta] = numeratorLGLRE[theta]/sum_P[theta]
-      numeratorHGLRE[theta] = numeratorHGLRE[theta]/sum_P[theta]
+        numeratorLGLRE[theta] = numeratorLGLRE[theta]/sum_P[theta]
+        numeratorHGLRE[theta] = numeratorHGLRE[theta]/sum_P[theta]
           
-      numeratorSRLGLE[theta] = numeratorSRLGLE[theta]/sum_P[theta]
-      numeratorSRHGLE[theta] = numeratorSRHGLE[theta]/sum_P[theta]
+        numeratorSRLGLE[theta] = numeratorSRLGLE[theta]/sum_P[theta]
+        numeratorSRHGLE[theta] = numeratorSRHGLE[theta]/sum_P[theta]
             
-      numeratorLRLGLE[theta] = numeratorLRLGLE[theta]/sum_P[theta]
-      numeratorLRHGLE[theta] = numeratorLRHGLE[theta]/sum_P[theta]
+        numeratorLRLGLE[theta] = numeratorLRLGLE[theta]/sum_P[theta]
+        numeratorLRHGLE[theta] = numeratorLRHGLE[theta]/sum_P[theta]
     
     
     #Evaluate dictionary elements corresponding to user selected keys
