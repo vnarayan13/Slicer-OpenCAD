@@ -340,7 +340,7 @@ class HeterogeneityCADWidget:
     for dataNode in self.inputDataNodes:     
       nodeLogic = FeatureExtractionLogic(dataNode, self.labelNode, self.featureKeys)
       self.FeatureVectors.append(nodeLogic.getFeatureVector())
-    print self.FeatureVectors      
+           
     self.populateStatistics(self.FeatureVectors)  
     self.saveButton.enabled = True
     return
@@ -612,3 +612,5 @@ class FeatureExtractionLogic:
     
   def getFeatureVector(self):
     return (self.FeatureVector)
+    
+# metric space analysis: http://well-adjusted.de/~jrspieker/mspace/

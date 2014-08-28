@@ -5,138 +5,155 @@ import math
 import operator
 import collections
 
-
 class TextureGLRL:
 
   def __init__(self, ii, parameterMatrix, parameterMatrixCoordinates, parameterValues, grayLevels, allKeys):
     self.textureFeaturesGLRL = collections.OrderedDict()
-    self.textureFeaturesGLRL["SRE"] = "numpy.mean(numeratorSRE)"
-    self.textureFeaturesGLRL["LRE"] = "numpy.mean(numeratorLRE)"
-    self.textureFeaturesGLRL["GLN"] = "numpy.mean(numeratorGLN)"
-    self.textureFeaturesGLRL["RLN"] = "numpy.mean(numeratorRLN)"
-    self.textureFeaturesGLRL["RP"] = "numpy.mean(runPercentage)"
-    self.textureFeaturesGLRL["LGLRE"] = "numpy.mean(numeratorLGLRE)"
-    self.textureFeaturesGLRL["HGLRE"] = "numpy.mean(numeratorHGLRE)"
-    self.textureFeaturesGLRL["SRLGLE"] = "numpy.mean(numeratorSRLGLE)"
-    self.textureFeaturesGLRL["SRHGLE"] = "numpy.mean(numeratorSRHGLE)"
-    self.textureFeaturesGLRL["LRLGLE"] = "numpy.mean(numeratorLRLGLE)"
-    self.textureFeaturesGLRL["LRHGLE"] = "numpy.mean(numeratorLRHGLE)"
+    self.textureFeaturesGLRL["SRE"] = "self.shortRunEmphasis(self.P_glrl, self.jvector, self.sumP_glrl)"
+    self.textureFeaturesGLRL["LRE"] = "self.longRunEmphasis(self.P_glrl, self.jvector, self.sumP_glrl)"
+    self.textureFeaturesGLRL["GLN"] = "self.grayLevelNonUniformity(self.P_glrl, self.sumP_glrl)"
+    self.textureFeaturesGLRL["RLN"] = "self.runLengthNonUniformity(self.P_glrl, self.sumP_glrl)"
+    self.textureFeaturesGLRL["RP"] = "self.runPercentage(self.P_glrl, self.Np)"
+    self.textureFeaturesGLRL["LGLRE"] = "self.lowGrayLevelRunEmphasis(self.P_glrl, self.ivector, self.sumP_glrl)"
+    self.textureFeaturesGLRL["HGLRE"] = "self.highGrayLevelRunEmphasis(self.P_glrl, self.ivector, self.sumP_glrl)"
+    self.textureFeaturesGLRL["SRLGLE"] = "self.shortRunLowGrayLevelEmphasis(self.P_glrl, self.ivector, self.jvector, self.sumP_glrl)"
+    self.textureFeaturesGLRL["SRHGLE"] = "self.shortRunHighGrayLevelEmphasis(self.P_glrl, self.ivector, self.jvector, self.sumP_glrl)"
+    self.textureFeaturesGLRL["LRLGLE"] = "self.longRunLowGrayLevelEmphasis(self.P_glrl, self.ivector, self.jvector, self.sumP_glrl)"
+    self.textureFeaturesGLRL["LRHGLE"] = "self.longRunHighGrayLevelEmphasis(self.P_glrl, self.ivector, self.jvector, self.sumP_glrl)"
     
     self.ii = ii
     self.parameterMatrix = parameterMatrix
     self.parameterMatrixCoordinates = parameterMatrixCoordinates
     self.parameterValues = parameterValues
     self.grayLevels = grayLevels
-    self.allKeys = allKeys
+    self.keys = set(allKeys).intersection(self.textureFeaturesGLRL.keys())
     
-          
-                        
-
-
-  def EvaluateFeatures(self):   
-    keys = set(self.allKeys).intersection(self.textureFeaturesGLRL.keys())
-    if not keys:
-      return(self.textureFeaturesGLRL)
-    
-    
-    #GLRL
-    angles = 13
-    maxRunLength = numpy.max(self.parameterMatrix.shape)
-    
-    #maximum run length in P matrix initialized to levels
-    P_glrl = numpy.zeros((self.grayLevels, maxRunLength, angles))
-    P_glrl = self.glrl_loop(self.ii, self.parameterMatrix, self.parameterMatrixCoordinates, angles, self.grayLevels, P_glrl)
-    
-    #Initialize Metrics
-    sum_P = numpy.zeros(angles)
-    numeratorSRE = numpy.zeros(angles)
-    numeratorLRE = numpy.zeros(angles)
-    
-    numeratorGLN = numpy.zeros(angles)
-    numeratorRLN = numpy.zeros(angles)    
-    runPercentage = numpy.zeros(angles)
-                     
-    numeratorLGLRE = numpy.zeros(angles)
-    numeratorHGLRE = numpy.zeros(angles)
-          
-    numeratorSRLGLE = numpy.zeros(angles)
-    numeratorSRHGLE = numpy.zeros(angles)
-            
-    numeratorLRLGLE = numpy.zeros(angles)
-    numeratorLRHGLE = numpy.zeros(angles)
-             
-    #Calculate Metrics  
-    for theta in xrange (angles):
-      P = P_glrl[:,:,theta]
-      
-      #For theta(0:13), Ng_indices represent appearances of any gray level, 
-      #size of list is number of unique gray levels
-      Ng_indices, = numpy.nonzero(P.sum(1)) 
-      Ng = Ng_indices.size
-      
-      #For theta(0:13), Nr_indices represent appearances of a run length for any gray level, 
-      #size of list is number of unique run lengths
-      Nr_indices, = numpy.nonzero(P.sum(0))
-      Nr = Nr_indices.size  
-      
-      
-      #Number of total voxels in the image        
-      Np = self.voxelCount(self.parameterValues) #voxel count function
-      #use StatisticsLib function?
-      
-      #Sum of all run length occurrences in P[:,:] for angle theta
-      sum_P[theta] = P.sum()
-           
-      #for i in xrange(Ng):
-        #for j in xrange(0,Nr):
-      for i in Ng_indices:  
-        for j in Nr_indices:
-          Pval = P[i,j]    
-          
-          numeratorSRE[theta] += ((Pval) / ((j+1)**2)) 
-          numeratorLRE[theta] += (Pval*((j+1)**2))
-          
-          numeratorGLN[theta] += ((P[i,:].sum())**2)       
-          numeratorRLN[theta] += ((P[:,j].sum())**2)
-                     
-          numeratorLGLRE[theta] += ((Pval) / ((i+1)**2))
-          numeratorHGLRE[theta] += (Pval*((i+1)**2))
-          
-          numeratorSRLGLE[theta] += ( (Pval) / (((j+1)**2)*((i+1)**2)) )  
-          numeratorSRHGLE[theta] += ( (Pval*((i+1)**2)) / ((j+1)**2) )
-            
-          numeratorLRLGLE[theta] += ( (Pval*((j+1)**2)) / ((i+1)**2) ) 
-          numeratorLRHGLE[theta] += ( (Pval*((j+1)**2))*((i+1)**2) )
-          
-      runPercentage[theta] = (sum_P[theta]/Np) 
-      
-      # check for the event that there are no run lengths
-      # in the direction theta to avoid divide by zero errors
-      if(sum_P[theta] != 0):  
-             
-        numeratorSRE[theta] = numeratorSRE[theta]/sum_P[theta]
-        numeratorLRE[theta] = numeratorLRE[theta]/sum_P[theta]
-      
-        numeratorGLN[theta] = numeratorGLN[theta]/sum_P[theta]
-        numeratorRLN[theta] = numeratorRLN[theta]/sum_P[theta]     
-                     
-        numeratorLGLRE[theta] = numeratorLGLRE[theta]/sum_P[theta]
-        numeratorHGLRE[theta] = numeratorHGLRE[theta]/sum_P[theta]
-          
-        numeratorSRLGLE[theta] = numeratorSRLGLE[theta]/sum_P[theta]
-        numeratorSRHGLE[theta] = numeratorSRHGLE[theta]/sum_P[theta]
-            
-        numeratorLRLGLE[theta] = numeratorLRLGLE[theta]/sum_P[theta]
-        numeratorLRHGLE[theta] = numeratorLRHGLE[theta]/sum_P[theta]
-    
-    
-    #Evaluate dictionary elements corresponding to user selected keys
-    for key in keys:
-      self.textureFeaturesGLRL[key] = eval(self.textureFeaturesGLRL[key])
-    return(self.textureFeaturesGLRL)
-    
+    self.CalculateCoefficients() 
   
-  def glrl_loop(self, ii, matrix, matrixCoordinates, angles, grayLevels, P_out):    
+  def CalculateCoefficients(self):
+    self.angles = 13
+    self.Ng = self.grayLevels
+    self.Nr = numpy.max(self.parameterMatrix.shape)
+    self.Np = self.voxelCount(self.parameterValues)  #voxel count function
+        
+    self.P_glrl = numpy.zeros((self.Ng, self.Nr, self.angles)) # maximum run length in P matrix initialized to highest gray level
+    self.P_glrl = self.calculate_glrl(self.ii, self.parameterMatrix, self.parameterMatrixCoordinates, self.angles, self.Ng, self.P_glrl)
+       
+    self.sumP_glrl = numpy.sum( numpy.sum(self.P_glrl, 0), 0 )    
+    self.ivector = numpy.arange(self.Ng) + 1
+    self.jvector = numpy.arange(self.Nr) + 1
+       
+  def shortRunEmphasis(self, P_glrl, jvector, sumP_glrl, meanFlag=True):
+    try:
+      sre = numpy.sum( numpy.sum( (P_glrl/((jvector**2)[None,:,None])) , 0 ), 0 ) / (sumP_glrl[None,None,:])
+    except ZeroDivisionError:
+      sre = 0    
+    if meanFlag:
+     return (sre.mean())
+    else:
+     return sre
+    
+  def longRunEmphasis(self, P_glrl, jvector, sumP_glrl, meanFlag=True):
+    try:
+      lre = numpy.sum( numpy.sum( (P_glrl*((jvector**2)[None,:,None])) , 0 ), 0 ) / (sumP_glrl[None,None,:])
+    except ZeroDivisionError:
+      lre = 0
+    if meanFlag:
+     return (lre.mean())
+    else:
+     return lre
+    
+  def grayLevelNonUniformity(self, P_glrl, sumP_glrl, meanFlag=True):
+    try:
+      gln = numpy.sum( (numpy.sum( P_glrl , 1)**2) , 0 ) / (sumP_glrl[None,None,:])    
+    except ZeroDivisionError:
+      gln = 0
+    if meanFlag:
+     return (gln.mean())
+    else:
+     return gln
+    
+  def runLengthNonUniformity(self, P_glrl, sumP_glrl, meanFlag=True):
+    try:
+      rln = numpy.sum( (numpy.sum( P_glrl , 0)**2) , 0 ) / (sumP_glrl[None,None,:])    
+    except ZeroDivisionError:
+      rln = 0
+    if meanFlag:
+     return (rln.mean())
+    else:
+     return rln
+    
+  def runPercentage(self, P_glrl, Np, meanFlag=True):
+    try:
+      rp = numpy.sum( numpy.sum( (P_glrl/(Np)) , 0 ), 0 )
+    except ZeroDivisionError:
+      rp = 0
+    if meanFlag:
+     return (rp.mean())
+    else:
+     return rp
+    
+  def lowGrayLevelRunEmphasis(self, P_glrl, ivector, sumP_glrl, meanFlag=True):
+    try:
+      lglre = numpy.sum( numpy.sum( (P_glrl/((ivector**2)[:,None,None])) , 0 ), 0 ) / (sumP_glrl[None,None,:])
+    except ZeroDivisionError:
+      lglre = 0
+    if meanFlag:
+     return (lglre.mean())
+    else:
+     return lglre
+      
+  def highGrayLevelRunEmphasis(self, P_glrl, ivector, sumP_glrl, meanFlag=True):
+    try:
+      hglre = numpy.sum( numpy.sum( (P_glrl*((ivector**2)[:,None,None])) , 0 ), 0 ) / (sumP_glrl[None,None,:])
+    except ZeroDivisionError:
+      hglre = 0
+    if meanFlag:
+     return (hglre.mean())
+    else:
+     return hglre
+    
+  def shortRunLowGrayLevelEmphasis(self, P_glrl, ivector, jvector, sumP_glrl, meanFlag=True):
+    try:
+      srlgle = numpy.sum( numpy.sum( (P_glrl/((jvector**2)[None,:,None]*(ivector**2)[:,None,None])) , 0 ), 0 ) / (sumP_glrl[None,None,:])
+    except ZeroDivisionError:
+      srlgle = 0
+    if meanFlag:
+     return (srlgle.mean())
+    else:
+     return srlgle
+     
+  def shortRunHighGrayLevelEmphasis(self, P_glrl, ivector, jvector, sumP_glrl, meanFlag=True):
+    try:
+      srhgle = numpy.sum( numpy.sum( ((P_glrl*(ivector**2)[:,None,None])/((jvector**2)[None,:,None])) , 0 ), 0 ) / (sumP_glrl[None,None,:])
+    except ZeroDivisionError:
+      srhgle = 0
+    if meanFlag:
+     return (srhgle.mean())
+    else:
+     return srhgle
+        
+  def longRunLowGrayLevelEmphasis(self, P_glrl, ivector, jvector, sumP_glrl, meanFlag=True):
+    try:
+      lrlgle = numpy.sum( numpy.sum( ((P_glrl*(jvector**2)[None,:,None])/((ivector**2)[:,None,None])) , 0 ), 0 ) / (sumP_glrl[None,None,:])
+    except ZeroDivisionError:
+      lrlgle = 0
+    if meanFlag:
+     return (lrlgle.mean())
+    else:
+     return lrlgle
+            
+  def longRunHighGrayLevelEmphasis(self, P_glrl, ivector, jvector, sumP_glrl, meanFlag=True):
+    try:
+      lrhgle = numpy.sum( numpy.sum( (P_glrl*(ivector**2)[:,None,None]*(jvector**2)[None,:,None]) , 0 ), 0 ) / (sumP_glrl[None,None,:])
+    except ZeroDivisionError:
+      lrhgle = 0
+    if meanFlag:
+     return (lrhgle.mean())
+    else:
+     return lrhgle  
+  
+  def calculate_glrl(self, ii, matrix, matrixCoordinates, angles, grayLevels, P_out):    
     padVal = 0 #use eps or NaN to pad matrix
     matrixDiagonals = list()
     
@@ -253,4 +270,13 @@ class TextureGLRL:
     return (P_out)   
        
   def voxelCount (self, parameterValues):
-    return (parameterValues.size)        
+    return (parameterValues.size)
+    
+  def EvaluateFeatures(self):  
+    if not self.keys:
+      return(self.textureFeaturesGLRL)
+            
+    #Evaluate dictionary elements corresponding to user selected keys
+    for key in self.keys:
+      self.textureFeaturesGLRL[key] = eval(self.textureFeaturesGLRL[key])
+    return(self.textureFeaturesGLRL)        

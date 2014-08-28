@@ -11,113 +11,118 @@ class TextureGLCM:
 
   def __init__(self, ii, parameterMatrix, parameterMatrixCoordinates, parameterValues, grayLevels, allKeys):
     self.textureFeaturesGLCM = collections.OrderedDict()       
-    self.textureFeaturesGLCM["Autocorrelation"] = "self.autocorrelationGLCM(self.P_glcm, prodMatrix)"
-    self.textureFeaturesGLCM["Cluster Prominence"] = "self.clusterProminenceGLCM(self.P_glcm, sumMatrix, ux, uy)"
-    self.textureFeaturesGLCM["Cluster Shade"] = "self.clusterShadeGLCM(self.P_glcm, sumMatrix, ux, uy)"
-    self.textureFeaturesGLCM["Cluster Tendency"] = "self.clusterTendencyGLCM(self.P_glcm, sumMatrix, ux, uy)"
-    self.textureFeaturesGLCM["Contrast"] = "self.contrastGLCM(self.P_glcm, diffMatrix)"
-    self.textureFeaturesGLCM["Correlation"] = "self.correlationGLCM(self.P_glcm, prodMatrix, ux, uy, sigx, sigy)"
-    self.textureFeaturesGLCM["Difference Entropy"] = "self.differenceEntropyGLCM(pxSuby, eps)"
-    self.textureFeaturesGLCM["Dissimilarity"] = "self.dissimilarityGLCM(self.P_glcm, diffMatrix)"
+    self.textureFeaturesGLCM["Autocorrelation"] = "self.autocorrelationGLCM(self.P_glcm, self.prodMatrix)"
+    self.textureFeaturesGLCM["Cluster Prominence"] = "self.clusterProminenceGLCM(self.P_glcm, self.sumMatrix, self.ux, self.uy)"
+    self.textureFeaturesGLCM["Cluster Shade"] = "self.clusterShadeGLCM(self.P_glcm, self.sumMatrix, self.ux, self.uy)"
+    self.textureFeaturesGLCM["Cluster Tendency"] = "self.clusterTendencyGLCM(self.P_glcm, self.sumMatrix, self.ux, self.uy)"
+    self.textureFeaturesGLCM["Contrast"] = "self.contrastGLCM(self.P_glcm, self.diffMatrix)"
+    self.textureFeaturesGLCM["Correlation"] = "self.correlationGLCM(self.P_glcm, self.prodMatrix, self.ux, self.uy, self.sigx, self.sigy)"
+    self.textureFeaturesGLCM["Difference Entropy"] = "self.differenceEntropyGLCM(self.pxSuby, self.eps)"
+    self.textureFeaturesGLCM["Dissimilarity"] = "self.dissimilarityGLCM(self.P_glcm, self.diffMatrix)"
     self.textureFeaturesGLCM["Energy (GLCM)"] = "self.energyGLCM(self.P_glcm)"
-    self.textureFeaturesGLCM["Entropy(GLCM)"] = "numpy.mean(ent[0,:])"  #"self.entropyGLCM(self.P_glcm, pxy, eps)" 
-    self.textureFeaturesGLCM["Homogeneity 1"] = "self.homogeneity1GLCM(self.P_glcm, diffMatrix)"
-    self.textureFeaturesGLCM["Homogeneity 2"] = "self.homogeneity2GLCM(self.P_glcm, diffMatrix)"
-    self.textureFeaturesGLCM["IMC1"] = "numpy.mean(imc1[0,:])" #"self.imc1GLCM(self,)" 
+    self.textureFeaturesGLCM["Entropy(GLCM)"] = "numpy.mean(self.ent[0,:])"  #"self.entropyGLCM(self.P_glcm, pxy, self.eps)" 
+    self.textureFeaturesGLCM["Homogeneity 1"] = "self.homogeneity1GLCM(self.P_glcm, self.diffMatrix)"
+    self.textureFeaturesGLCM["Homogeneity 2"] = "self.homogeneity2GLCM(self.P_glcm, self.diffMatrix)"
+    self.textureFeaturesGLCM["IMC1"] = "numpy.mean(self.imc1[0,:])" #"self.imc1GLCM(self,)" 
     #self.textureFeaturesGLCM["IMC2"] = "sum(imc2)/len(imc2)" #"self.imc2GLCM(self,)"  # produces a calculation error
-    self.textureFeaturesGLCM["IDMN"] = "self.idmnGLCM(self.P_glcm, diffMatrix, Ng)"
-    self.textureFeaturesGLCM["IDN"] = "self.idnGLCM(self.P_glcm, diffMatrix, Ng)"
-    self.textureFeaturesGLCM["Inverse Variance"] = "self.inverseVarianceGLCM(self.P_glcm, diffMatrix, Ng)"
+    self.textureFeaturesGLCM["IDMN"] = "self.idmnGLCM(self.P_glcm, self.diffMatrix, self.Ng)"
+    self.textureFeaturesGLCM["IDN"] = "self.idnGLCM(self.P_glcm, self.diffMatrix, self.Ng)"
+    self.textureFeaturesGLCM["Inverse Variance"] = "self.inverseVarianceGLCM(self.P_glcm, self.diffMatrix, self.Ng)"
     self.textureFeaturesGLCM["Maximum Probability"] = "self.maximumProbabilityGLCM(self.P_glcm)"
-    self.textureFeaturesGLCM["Sum Average"] = "self.sumAverageGLCM(pxAddy, kValuesSum)"
-    self.textureFeaturesGLCM["Sum Entropy"] = "self.sumEntropyGLCM(pxAddy, eps)" 
-    self.textureFeaturesGLCM["Sum Variance"] = "self.sumVarianceGLCM(pxAddy, kValuesSum)"   
-    self.textureFeaturesGLCM["Variance (GLCM)"] = "self.varianceGLCM(self.P_glcm, ivector, u)"
+    self.textureFeaturesGLCM["Sum Average"] = "self.sumAverageGLCM(self.pxAddy, self.kValuesSum)"
+    self.textureFeaturesGLCM["Sum Entropy"] = "self.sumEntropyGLCM(self.pxAddy, self.eps)" 
+    self.textureFeaturesGLCM["Sum Variance"] = "self.sumVarianceGLCM(self.pxAddy, self.kValuesSum)"   
+    self.textureFeaturesGLCM["Variance (GLCM)"] = "self.varianceGLCM(self.P_glcm, self.ivector, self.u)"
     
     self.ii = ii
     self.parameterMatrix = parameterMatrix
     self.parameterMatrixCoordinates = parameterMatrixCoordinates
     self.parameterValues = parameterValues
-    self.grayLevels = grayLevels
+    self.Ng = grayLevels
     self.keys = set(allKeys).intersection(self.textureFeaturesGLCM.keys())
-                
-  def EvaluateFeatures(self):
-    if not self.keys:
-      return(self.textureFeaturesGLCM)
-        
+    
     # normalization step:
- 
+    self.CalculateCoefficients()
+                   
+  def CalculateCoefficients(self): 
     ##Generate GLCM Matrices (self.P_glcm)
     # make distance an optional parameter, as in: distances = numpy.arange(parameter)
     distances = numpy.array([1]) 
     directions = 26    
-    self.P_glcm = numpy.zeros( (self.grayLevels, self.grayLevels, distances.size, directions) )
-    self.P_glcm = self.glcm_loop(self.ii, self.parameterMatrix, self.parameterMatrixCoordinates, distances, directions, self.grayLevels, self.P_glcm) 
+    self.P_glcm = numpy.zeros( (self.Ng, self.Ng, distances.size, directions) )
+    self.P_glcm = self.calculate_glcm(self.ii, self.parameterMatrix, self.parameterMatrixCoordinates, distances, directions, self.Ng, self.P_glcm) 
   
     #make each GLCM symmetric an optional parameter
     #if symmetric:
       #Pt = numpy.transpose(P, (1, 0, 2, 3))
       #P = P + Pt
     
-    ##Calculate GLCM
-    Ng = self.grayLevels
-    ivector = numpy.arange(1,Ng+1) #shape = (Ng, distances.size, directions)
-    jvector = numpy.arange(1,Ng+1) #shape = (Ng, distances.size, directions)
-    eps = numpy.spacing(1)
+    ##Calculate GLCM Coefficients
+    self.ivector = numpy.arange(1,self.Ng+1) #shape = (self.Ng, distances.size, directions)
+    self.jvector = numpy.arange(1,self.Ng+1) #shape = (self.Ng, distances.size, directions)
+    self.eps = numpy.spacing(1)
     
-    prodMatrix = numpy.multiply.outer(ivector, jvector) #shape = (Ng, Ng)
-    sumMatrix = numpy.add.outer(ivector, jvector) #shape = (Ng, Ng)
-    diffMatrix = numpy.absolute(numpy.subtract.outer(ivector, jvector)) #shape = (Ng, Ng)
-    kValuesSum = numpy.arange(2, (Ng*2)+1) #shape = (2*Ng-1)
-    kValuesDiff = numpy.arange(0,Ng) #shape = (Ng-1)
-      
-    u = self.P_glcm.mean(0).mean(0) #shape = (distances.size, directions)
-    px = self.P_glcm.sum(1) #marginal row probabilities #shape = (Ng, distances.size, directions)
-    py = self.P_glcm.sum(0) #marginal column probabilities #shape = (Ng, distances.size, directions)
+    self.prodMatrix = numpy.multiply.outer(self.ivector, self.jvector) #shape = (self.Ng, self.Ng)
+    self.sumMatrix = numpy.add.outer(self.ivector, self.jvector) #shape = (self.Ng, self.Ng)
+    self.diffMatrix = numpy.absolute(numpy.subtract.outer(self.ivector, self.jvector)) #shape = (self.Ng, self.Ng)
+    self.kValuesSum = numpy.arange(2, (self.Ng*2)+1) #shape = (2*self.Ng-1)
+    self.kValuesDiff = numpy.arange(0,self.Ng) #shape = (self.Ng-1)
     
-    ux = px.mean(0) #shape = (distances.size, directions)
-    uy = py.mean(0) #shape = (distances.size, directions)
+    #shape = (distances.size, directions)
+    self.u = self.P_glcm.mean(0).mean(0) 
+    #marginal row probabilities #shape = (self.Ng, distances.size, directions)
+    self.px = self.P_glcm.sum(1)
+    #marginal column probabilities #shape = (self.Ng, distances.size, directions)
+    self.py = self.P_glcm.sum(0) 
     
-    sigx = px.std(0) #shape = (distances.size, directions)
-    sigy = py.std(0) #shape = (distances.size, directions)
+    #shape = (distances.size, directions)
+    self.ux = self.px.mean(0)
+    #shape = (distances.size, directions) 
+    self.uy = self.py.mean(0) 
     
-    pxAddy = numpy.array([ numpy.sum(self.P_glcm[sumMatrix == k], 0) for k in kValuesSum ]) #shape = (2*Ng-1, distances.size, directions)
-    pxSuby = numpy.array([ numpy.sum(self.P_glcm[diffMatrix == k], 0) for k in kValuesDiff ]) #shape = (Ng, distances.size, directions)
+    #shape = (distances.size, directions)
+    self.sigx = self.px.std(0)
+    #shape = (distances.size, directions)
+    self.sigy = self.py.std(0) 
     
-    HX = (-1) * numpy.sum( (px * numpy.where(px!=0, numpy.log2(px), numpy.log2(eps))), 0) #entropy of px #shape = (distances.size, directions)
-    HY = (-1) * numpy.sum( (py * numpy.where(py!=0, numpy.log2(py), numpy.log2(eps))), 0) #entropy of py #shape = (distances.size, directions)
-    HXY = (-1) * numpy.sum( numpy.sum( (self.P_glcm * numpy.where(self.P_glcm!=0, numpy.log2(self.P_glcm), numpy.log2(eps))), 0 ), 0 ) #shape = (distances.size, directions)
+    #shape = (2*self.Ng-1, distances.size, directions)
+    self.pxAddy = numpy.array([ numpy.sum(self.P_glcm[self.sumMatrix == k], 0) for k in self.kValuesSum ]) 
+    #shape = (self.Ng, distances.size, directions)
+    self.pxSuby = numpy.array([ numpy.sum(self.P_glcm[self.diffMatrix == k], 0) for k in self.kValuesDiff ])
+    
+    #entropy of self.px #shape = (distances.size, directions)
+    self.HX = (-1) * numpy.sum( (self.px * numpy.where(self.px!=0, numpy.log2(self.px), numpy.log2(self.eps))), 0)
+    #entropy of py #shape = (distances.size, directions)
+    self.HY = (-1) * numpy.sum( (self.py * numpy.where(self.py!=0, numpy.log2(self.py), numpy.log2(self.eps))), 0)
+    #shape = (distances.size, directions)
+    self.HXY = (-1) * numpy.sum( numpy.sum( (self.P_glcm * numpy.where(self.P_glcm!=0, numpy.log2(self.P_glcm), numpy.log2(self.eps))), 0 ), 0 )
+    
+    ###work on this
+    #self.pxy = numpy.multiply.outer(self.px[:,g,a], self.py[:,g,a])
     
     ### generate pxy with shape = self.P_glcm.shape
-    textureMetricArrayShape = tuple([distances.size, directions])      
-    HXY1 = numpy.zeros(tuple([distances.size, directions]))
-    HXY2 = numpy.zeros(tuple([distances.size, directions]))   
-    ent = numpy.zeros(textureMetricArrayShape)
-    imc1 = numpy.zeros(textureMetricArrayShape)
+    textureMetricArrayShape = tuple([distances.size, directions])         
+    self.HXY1 = numpy.zeros(textureMetricArrayShape)
+    self.HXY2 = numpy.zeros(textureMetricArrayShape)   
+    self.ent = numpy.zeros(textureMetricArrayShape)
+    self.imc1 = numpy.zeros(textureMetricArrayShape)
       
     #imc2 = []#numpy.zeros((textureMetricArrayShape), dtype='float128')          
     #decimal.getcontext().prec = 4
     for a in xrange(directions):
       for g in xrange(distances.size):
         Pij = self.P_glcm[:,:,g,a]         
-        pxy = numpy.multiply.outer(px[:,g,a], py[:,g,a])
-        HXY1[g,a] = (-1) * numpy.sum( Pij * numpy.where(pxy!=0, numpy.log2(pxy), numpy.log2(eps)) ) #shape = (distances.size, directions)
-        HXY2[g,a] = (-1) * numpy.sum( pxy * numpy.where(pxy!=0, numpy.log2(pxy), numpy.log2(eps)) ) #shape = (distances.size, directions)      
+        pxy = numpy.multiply.outer(self.px[:,g,a], self.py[:,g,a])
+        self.HXY1[g,a] = (-1) * numpy.sum( Pij * numpy.where(pxy!=0, numpy.log2(pxy), numpy.log2(self.eps)) ) #shape = (distances.size, directions)
+        self.HXY2[g,a] = (-1) * numpy.sum( pxy * numpy.where(pxy!=0, numpy.log2(pxy), numpy.log2(self.eps)) ) #shape = (distances.size, directions)      
         
-        ent[g,a] = -1 * numpy.sum( Pij * numpy.where(pxy!=0, numpy.log2(pxy), numpy.log2(eps)) )        
-        imc1[g,a] = ((HXY[g,a]) - HXY1[g,a])/(numpy.max([HX[g,a],HY[g,a]]))
+        self.ent[g,a] = -1 * numpy.sum( Pij * numpy.where(pxy!=0, numpy.log2(pxy), numpy.log2(self.eps)) )        
+        self.imc1[g,a] = ((self.HXY[g,a]) - self.HXY1[g,a])/(numpy.max([self.HX[g,a],self.HY[g,a]]))
        
        #produces Nan(square root of a negative)
-       #exponent = decimal.Decimal( -2*(HXY2[g,a]-HXY[g,a]) )      
+       #exponent = decimal.Decimal( -2*(HXY2[g,a]-self.HXY[g,a]) )      
        #imc2.append( ( decimal.Decimal(1)-decimal.Decimal(numpy.e)**(exponent) )**(decimal.Decimal(0.5)) ) 
-            
-    
-    #Evaluate dictionary elements corresponding to user selected keys
-    for key in self.keys:
-      self.textureFeaturesGLCM[key] = eval(self.textureFeaturesGLCM[key])
-    return(self.textureFeaturesGLCM)        
-    
-    
+               
   def autocorrelationGLCM(self, P_glcm, prodMatrix, meanFlag=True):
     ac = numpy.sum(numpy.sum(P_glcm*prodMatrix[:,:,None,None], 0 ), 0 )
     if meanFlag:
@@ -280,7 +285,7 @@ class TextureGLCM:
     else:
      return vari
      
-  def glcm_loop(self, ii, matrix, matrixCoordinates, distances, directions, grayLevels, out):
+  def calculate_glcm(self, ii, matrix, matrixCoordinates, distances, directions, grayLevels, out):
     # 26 GLCM matrices for each image for every direction from the voxel 
     # (26 for each neighboring voxel from a reference voxel centered in a 3x3 cube)
     # for GLCM matrices P(i,j;gamma, a), gamma = 1, a = 1...13
@@ -341,7 +346,7 @@ class TextureGLCM:
           col = c + angle[1]
           height = h + angle[0]
           
-          #Can introduce Paramter Option for reference voxel(i) and neighbor voxel(j):
+          #Can introduce Parameter Option for reference voxel(i) and neighbor voxel(j):
           #Intratumor only: i and j both must be in tumor ROI
           #Tumor+Surrounding: i must be in tumor ROI but J does not have to be
           if row >= 0 and row < rows and col >= 0 and col < cols:
@@ -353,5 +358,12 @@ class TextureGLCM:
     
     return (out)  
     
-
+  def EvaluateFeatures(self):
+    if not self.keys:
+      return(self.textureFeaturesGLCM)
+      
+    #Evaluate dictionary elements corresponding to user selected keys
+    for key in self.keys:
+      self.textureFeaturesGLCM[key] = eval(self.textureFeaturesGLCM[key])
+    return(self.textureFeaturesGLCM)  
  
