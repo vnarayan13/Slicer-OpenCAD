@@ -4,7 +4,6 @@ import collections
 import FeatureWidgetHelperLib
 
 
-
 class CheckableTabWidget(qt.QTabWidget):
 
   def __init__(self, parent=None):
@@ -101,22 +100,19 @@ class ContextMenu(qt.QMenu):
    
   def Setup(self, featureName, descriptionLabel="Description:"):
     self.featureName = featureName
-    self.descriptionLabel = descriptionLabel
-    
+    self.descriptionLabel = descriptionLabel   
     self.parameters = collections.OrderedDict()
-         
+           
     self.descriptionAction = qt.QWidgetAction(self)
     self.descriptionAction.setDefaultWidget(self.descriptionLabel)
-    self.closeAction = qt.QAction("Close", self)
-     
+    self.closeAction = qt.QAction("Close", self)     
     self.reloadActions()
       
   def reloadActions(self):
     #does adding an action that exists in the menu just replace that action slot?
     self.addAction(self.descriptionAction)    
     for parameter in self.parameters:
-      self.addAction(self.parameters[parameter]['Action'])
-                
+      self.addAction(self.parameters[parameter]['Action'])               
     self.addAction(self.closeAction)
       
   def addParameter(self, parent, parameterName):

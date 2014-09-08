@@ -5,9 +5,11 @@ import math
 import operator
 import collections
 
+#TODO: exception handling for ZeroDivision in a specific direction, theta
+
 class TextureGLRL:
 
-  def __init__(self, ii, parameterMatrix, parameterMatrixCoordinates, parameterValues, grayLevels, allKeys):
+  def __init__(self, grayLevels, numGrayLevels, parameterMatrix, parameterMatrixCoordinates, parameterValues, allKeys):
     self.textureFeaturesGLRL = collections.OrderedDict()
     self.textureFeaturesGLRL["SRE"] = "self.shortRunEmphasis(self.P_glrl, self.jvector, self.sumP_glrl)"
     self.textureFeaturesGLRL["LRE"] = "self.longRunEmphasis(self.P_glrl, self.jvector, self.sumP_glrl)"
@@ -21,23 +23,23 @@ class TextureGLRL:
     self.textureFeaturesGLRL["LRLGLE"] = "self.longRunLowGrayLevelEmphasis(self.P_glrl, self.ivector, self.jvector, self.sumP_glrl)"
     self.textureFeaturesGLRL["LRHGLE"] = "self.longRunHighGrayLevelEmphasis(self.P_glrl, self.ivector, self.jvector, self.sumP_glrl)"
     
-    self.ii = ii
+    self.grayLevels = grayLevels
     self.parameterMatrix = parameterMatrix
     self.parameterMatrixCoordinates = parameterMatrixCoordinates
     self.parameterValues = parameterValues
-    self.grayLevels = grayLevels
+    self.numGrayLevels = numGrayLevels
     self.keys = set(allKeys).intersection(self.textureFeaturesGLRL.keys())
     
     self.CalculateCoefficients() 
   
   def CalculateCoefficients(self):
     self.angles = 13
-    self.Ng = self.grayLevels
+    self.Ng = self.numGrayLevels
     self.Nr = numpy.max(self.parameterMatrix.shape)
     self.Np = self.voxelCount(self.parameterValues)  #voxel count function
         
     self.P_glrl = numpy.zeros((self.Ng, self.Nr, self.angles)) # maximum run length in P matrix initialized to highest gray level
-    self.P_glrl = self.calculate_glrl(self.ii, self.parameterMatrix, self.parameterMatrixCoordinates, self.angles, self.Ng, self.P_glrl)
+    self.P_glrl = self.calculate_glrl(self.grayLevels, self.Ng, self.parameterMatrix, self.parameterMatrixCoordinates, self.angles, self.P_glrl)
        
     self.sumP_glrl = numpy.sum( numpy.sum(self.P_glrl, 0), 0 )    
     self.ivector = numpy.arange(self.Ng) + 1
@@ -153,7 +155,7 @@ class TextureGLRL:
     else:
      return lrhgle  
   
-  def calculate_glrl(self, ii, matrix, matrixCoordinates, angles, grayLevels, P_out):    
+  def calculate_glrl(self, grayLevels, numGrayLevels, matrix, matrixCoordinates, angles, P_out):    
     padVal = 0 #use eps or NaN to pad matrix
     matrixDiagonals = list()
     
@@ -247,13 +249,10 @@ class TextureGLRL:
     mDiags = [ numpy.diagonal(h,x,0,1).tolist() for h in [matrix[:,::-1,::-1].diagonal(a,0,1) for a in xrange(lowBound, highBound)] for x in xrange(-h.shape[0]+1, h.shape[1]) ]
     matrixDiagonals.append( filter(lambda x: numpy.nonzero(x)[0].size>1, mDiags) )
                 
-    #or [n for n in mDiags if numpy.nonzero(n)[0].size>1] instead of filter(lambda x: numpy.nonzero(x)[0].size>1, mDiags)
-    #ii is the array containing the corresponding intensity level to the i and j indices of P[:,:,g,a]
-    #use ii[i] or ii[j] to get intensity level intensity, i+1 or j+1 for intensity level instead of using the dict
-    voxelToIndexDict = dict(zip(ii,numpy.arange(ii.size)))
+    #[n for n in mDiags if numpy.nonzero(n)[0].size>1] instead of filter(lambda x: numpy.nonzero(x)[0].size>1, mDiags)
     
     #Run-Length Encoding (rle) for the 13 list of diagonals (1 list per 3D direction/angle)
-    for angle in xrange (0, len(matrixDiagonals)): #13 diagonalLists
+    for angle in xrange (0, len(matrixDiagonals)):
       P = P_out[:,:,angle]     
       for diagonal in matrixDiagonals[angle]:
         diagonal = numpy.array(diagonal, dtype='int')
@@ -263,7 +262,8 @@ class TextureGLRL:
         #a or pos[:-1] = run start #b or pos[1:] = run stop #diagonal[a] is matrix value       
         #adjust condition for pos[:-1] != padVal = 0 to != padVal = eps or NaN or whatever pad value
         rle = zip([n for n in diagonal[pos[:-1]] if n!=padVal], pos[1:] - pos[:-1])
-        rle = [ [voxelToIndexDict[x],y-1] for x,y in rle ] #rle = map(lambda (x,y): [voxelToIndexDict[x],y-1], rle)
+        rle = [ [numpy.where(grayLevels==x)[0][0],y-1] for x,y in rle ] #rle = map(lambda (x,y): [voxelToIndexDict[x],y-1], rle)
+        
         # Increment GLRL matrix counter at coordinates defined by the run-length encoding               
         P[zip(*rle)] += 1
          
@@ -279,4 +279,5 @@ class TextureGLRL:
     #Evaluate dictionary elements corresponding to user selected keys
     for key in self.keys:
       self.textureFeaturesGLRL[key] = eval(self.textureFeaturesGLRL[key])
-    return(self.textureFeaturesGLRL)        
+    return(self.textureFeaturesGLRL)
+

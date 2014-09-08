@@ -23,7 +23,7 @@ class GeometricalMeasures:
     self.cubicMMPerVoxel = reduce(lambda x,y: x*y, self.labelNode.GetSpacing())
     self.extrudedMatrix, self.extrudedMatrixCoordinates = self.extrudeMatrix(self.parameterMatrix, self.parameterMatrixCoordinates, self.parameterValues)
     
-  def extrudedSurfaceArea(self, labelNode, a, extrudedMatrixCoordinates, parameterValues):
+  def extrudedSurfaceArea(self, labelNode, extrudedMatrix, extrudedMatrixCoordinates, parameterValues):
     x, y, z = labelNode.GetSpacing()
        
     # surface areas of directional connections
@@ -31,10 +31,9 @@ class GeometricalMeasures:
     yz = y*z
     xy = x*y
     fourD = (2*xy + 2*xz + 2*yz)
-    
-    voxelTotalSA = (2*xy + 2*xz + 2*yz)
-    totalSA = parameterValues.size * voxelTotalSA
-    totalDimensionalSurfaceArea = (2*xy + 2*xz + 2*yz + 2*fourD)
+       
+    totalVoxelSurfaceArea4D = (2*xy + 2*xz + 2*yz + 2*fourD)
+    totalSA = parameterValues.size * totalVoxelSurfaceArea4D
     
     # in matrixSACoordinates
     # i: height (z), j: vertical (y), k: horizontal (x), l: 4th or extrusion dimension   
@@ -44,10 +43,10 @@ class GeometricalMeasures:
     # vectorize
     for i,j,k,l_slice in zip(*extrudedMatrixCoordinates):
       for l in xrange(l_slice.start, l_slice.stop):
-        fxy = numpy.array([ a[i+1,j,k,l], a[i-1,j,k,l] ]) == 0
-        fyz = numpy.array([ a[i,j+1,k,l], a[i,j-1,k,l] ]) == 0
-        fxz = numpy.array([ a[i,j,k+1,l], a[i,j,k-1,l] ]) == 0  
-        f4d = numpy.array([ a[i,j,k,l+1], a[i,j,k,l-1] ]) == 0
+        fxy = numpy.array([ extrudedMatrix[i+1,j,k,l], extrudedMatrix[i-1,j,k,l] ]) == 0
+        fyz = numpy.array([ extrudedMatrix[i,j+1,k,l], extrudedMatrix[i,j-1,k,l] ]) == 0
+        fxz = numpy.array([ extrudedMatrix[i,j,k+1,l], extrudedMatrix[i,j,k-1,l] ]) == 0  
+        f4d = numpy.array([ extrudedMatrix[i,j,k,l+1], extrudedMatrix[i,j,k,l-1] ]) == 0
                
         extrudedElementSurface = (numpy.sum(fxz) * xz) + (numpy.sum(fyz) * yz) + (numpy.sum(fxy) * xy) + (numpy.sum(f4d) * fourD)     
         extrudedSurfaceArea += extrudedElementSurface

@@ -2,7 +2,6 @@ from __main__ import vtk, qt, ctk, slicer
 import string
 
 
-# subclass qt.QLabel
 class FeatureDescriptionLabel(qt.QLabel):
   def __init__(self, parent=None):
     super(FeatureDescriptionLabel, self).__init__(parent)
@@ -14,6 +13,7 @@ class FeatureDescriptionLabel(qt.QLabel):
   def setDescription(self, featureName):
     self.description = featureName + ' Description:\n\n' 
     
+    # TODO: pull descriptions from a delimited text file or JSON file
     # First-Order Statistics
     if featureName == "Voxel Count":
       self.description += "Voxel Count is the total number of voxels within the ROI of the grayscale image or parameter map."

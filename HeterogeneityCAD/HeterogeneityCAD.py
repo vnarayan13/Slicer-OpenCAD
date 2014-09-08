@@ -14,7 +14,6 @@ from vtk import vtkShortArray
 import FeatureExtractionLib
 import FeatureWidgetHelperLib
 
-
 #
 # HeterogeneityCAD
 #
@@ -53,13 +52,7 @@ class HeterogeneityCADWidget:
     if not parent:
       self.setup()
       self.parent.show()
-      
-    """  
-    jsonFiles = glob(JSON_DIR+"*.json")
-    jsonFiles.sort(cmp=lambda x,y: cmp(os.path.basename(x), os.path.basename(y)))
-    # example json file parsing from Slicer-SimpleFilters
-    """
-
+    
     self.fileDialog = None
     
     # Initialize Data Nodes List
@@ -101,7 +94,6 @@ class HeterogeneityCADWidget:
     ##Input Volume as a PET/CT/MRI image or parameter map converted to a volume
     self.inputVolHetFrame = qt.QFrame(self.inputHeterogeneityCADCollapsibleButton)
     self.inputVolHetFrame.setLayout(qt.QHBoxLayout())
-    
     self.inputHeterogeneityCADLayout.addRow(self.inputVolHetFrame)     
     # label for selecting individual node
     self.inputVolHet = qt.QLabel("Input Node: ", self.inputVolHetFrame)
@@ -131,10 +123,9 @@ class HeterogeneityCADWidget:
     self.allButtonsFrame = qt.QFrame(self.inputHeterogeneityCADCollapsibleButton)
     self.allButtonsFrame.objectName = 'AllButtonsFrameButton'
     self.allButtonsFrame.setLayout(qt.QVBoxLayout())
-    
     self.inputHeterogeneityCADLayout.addRow(self.dataNodesFrame, self.allButtonsFrame)
     # Data Nodes view
-    #Use list view here with scrollarea widget.
+    # Use list view here with scrollarea widget.
     self.dataScrollArea = qt.QScrollArea()  
     self.dataNodesListWidget = qt.QListWidget()
     self.dataNodesListWidget.name = 'dataNodesListWidget'
@@ -162,10 +153,9 @@ class HeterogeneityCADWidget:
     self.removeAllDataNodesButton.connect('clicked()', self.onRemoveAllDataNodesButtonClicked)
     self.allButtonsFrame.layout().addWidget(self.removeAllDataNodesButton)
         
-    ##Use Label Map as ROI(segmentation output or user-selected ROI)
+    # Use Label Map as ROI(segmentation output or user-selected ROI)
     self.inputLabelROIFrame = qt.QFrame(self.inputHeterogeneityCADCollapsibleButton)
     self.inputLabelROIFrame.setLayout(qt.QHBoxLayout())
-    
     self.inputHeterogeneityCADLayout.addRow(self.inputLabelROIFrame)
     # Enable Input Label Map as ROI
     self.inputLabelROI = qt.QLabel("Label Map ROI: ", self.inputLabelROIFrame)
@@ -184,10 +174,8 @@ class HeterogeneityCADWidget:
 
     #End HeterogeneityCAD Inputs Collapsible Button
     #################################################
- 
-    #################################################
     #HeterogeneityCAD Features Collapsible Button
-
+    
     self.HeterogeneityCADCollapsibleButton = ctk.ctkCollapsibleButton()
     self.HeterogeneityCADCollapsibleButton.text = "HeterogeneityCAD Features Selection"
     self.layout.addWidget(self.HeterogeneityCADCollapsibleButton)
@@ -200,14 +188,11 @@ class HeterogeneityCADWidget:
     gridWidth = 3
     gridHeight = 9
     for featureClass in self.featureClassKeys:    
-      """
       # by default, features only from the following features classes are selected
       if featureClass == "First-Order Statistics" or featureClass == "Morphology and Shape":
         check = True
       else:
         check = False
-      """
-      check = True
     
       tabFeatureClass = qt.QWidget()
       tabFeatureClass.setLayout(qt.QGridLayout())
@@ -232,7 +217,7 @@ class HeterogeneityCADWidget:
     self.tabGroupsHeterogeneityFeatures.addParameter("Geometrical Measures", "Extrusion Parameters")
     self.tabGroupsHeterogeneityFeatures.addParameter("Texture: GLCM", "GLCM Matrix Parameters")
     self.tabGroupsHeterogeneityFeatures.addParameter("Texture: GLRL", "GLRL Matrix Parameters")
-    # add capabilities for invidual feature parameters
+    # add capabilities for individual feature parameters
     
     # note: try using itertools list merging with lists of GLRL diagonal    
     self.heterogeneityFeatureWidgets = list(itertools.chain.from_iterable(self.featureWidgets.values()))
@@ -259,9 +244,7 @@ class HeterogeneityCADWidget:
     
     #End HeterogeneityCAD Features Collapsible Button
     #################################################
-   
-    #################################################
-    #Statistics Chart
+    #Feature Summary Chart
 
     #Complete chart options, export list of user-selected options identified via connections to labelstatistics module
     self.chartOptions = ("Count", "Volume mm^3", "Volume cc", "Min", "Max", "Mean", "StdDev")
@@ -279,9 +262,6 @@ class HeterogeneityCADWidget:
 
     #End Statistics Chart
     #################################################
-
-  #################################################
-  #Logic
               
   def onAddDataNodeButtonClicked(self):
     self.inputDataNodes.append(self.inputSelectorVolHet.currentNode())
@@ -314,17 +294,18 @@ class HeterogeneityCADWidget:
     # self.inputDataNodes contains the input node names in 'Nodes List'
     self.labelNode = self.inputSelectorLabel.currentNode()
     
-    self.featureKeys = ["Node"]# + [str(widget.text) for widget in self.heterogeneityFeatureWidgets if widget.checked==True]
-    self.featureClassKeys = set()
+    self.featureKeys = ["Node"]
+    self.featureClassKeys = set() # no duplicate keys allowed in set()
     
-    # initialize a container of feature vectors (one for each input node-ROI node pair)
+    # initialize a list of feature vectors (one for each input node-ROI node pair)
     # a feature vector is a dictionary object with features as keys and feature values as values 
     self.FeatureVectors = []
     
+    # build list of features and feature classes based on what is checked by the user
     for featureClass in self.featureWidgets:
       for widget in self.featureWidgets[featureClass]:
         if widget.checked==True:
-          self.featureKeys.append(str(widget.text)) 
+          self.featureKeys.append(str(widget.text))
           self.featureClassKeys.add(featureClass)
                
     if (len(self.inputDataNodes) == 0):
@@ -346,7 +327,6 @@ class HeterogeneityCADWidget:
     return
     
   def populateStatistics(self, FeatureVectors):
-    # move into FeatureExtractionLogic Class
     if not (FeatureVectors):
       return
       
@@ -415,7 +395,7 @@ class HeterogeneityCADWidget:
   def statisticsAsCSV(self):
   # create array for all features
   # needs a list of Feature Vectors 
-    """print comma separated value file with header keys in quotes"""
+  # print comma separated value file with header keys in quotes
     csv = ""
     header = ""
     
@@ -504,11 +484,11 @@ class FeatureExtractionLogic:
     self.matrix, self.matrixCoordinates = self.paddedTumorMatrixAndCoordinates(self.targetVoxels, self.targetVoxelsCoordinates) 
     
     # get Histogram data
-    self.bins, self.arrayGrayLevels, self.numGrayLevels = self.getHistogramData(self.targetVoxels)
+    self.bins, self.grayLevels, self.numGrayLevels = self.getHistogramData(self.targetVoxels)
     
     ########
     # Manage feature classes for Heterogeneity feature calculations and consolidate into self.FeatureVector
-    # TODO: create a parent class for all feature classes for common functions
+    # TODO: create a parent class for all feature classes
     self.FeatureVector = collections.OrderedDict()
         
     # Node Information     
@@ -516,13 +496,11 @@ class FeatureExtractionLogic:
     self.nodeInformation = FeatureExtractionLib.NodeInformation(self.dataNode, self.labelNode, self.keys)
     self.FeatureVector.update( self.nodeInformation.EvaluateFeatures() )         
 
-
     # First Order Statistics    
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "First Order Statistics", len(self.FeatureVector))
     self.distributionStatistics = FeatureExtractionLib.FirstOrderStatistics(self.targetVoxels, self.bins, self.numGrayLevels, self.keys)
     self.FeatureVector.update( self.distributionStatistics.EvaluateFeatures() )
-    
-    
+      
     # Shape/Size and Morphological Features)
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "Morphology Statistics", len(self.FeatureVector))   
     # extend padding by one row/column for all 6 directions
@@ -530,27 +508,23 @@ class FeatureExtractionLogic:
     matrixSA, matrixSACoordinates = self.padMatrix(self.matrix, self.matrixCoordinates, maxDimsSA, self.targetVoxels)      
     self.morphologyStatistics = FeatureExtractionLib.MorphologyStatistics(self.labelNode, matrixSA, matrixSACoordinates, self.targetVoxels, self.keys)
     self.FeatureVector.update( self.morphologyStatistics.EvaluateFeatures() )
-    
-    
+     
      # Texture Features(GLCM)
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "GLCM Texture Features", len(self.FeatureVector))    
-    self.textureFeaturesGLCM = FeatureExtractionLib.TextureGLCM(self.arrayGrayLevels, self.matrix, self.matrixCoordinates, self.targetVoxels, self.numGrayLevels, self.keys)
+    self.textureFeaturesGLCM = FeatureExtractionLib.TextureGLCM(self.grayLevels, self.numGrayLevels, self.matrix, self.matrixCoordinates, self.targetVoxels, self.keys)
     self.FeatureVector.update( self.textureFeaturesGLCM.EvaluateFeatures() )
-    
-    
+      
     # Texture Features(GLRL)  
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "GLRL Texture Features", len(self.FeatureVector))
-    self.textureFeaturesGLRL = FeatureExtractionLib.TextureGLRL(self.arrayGrayLevels, self.matrix, self.matrixCoordinates, self.targetVoxels, self.numGrayLevels, self.keys)
+    self.textureFeaturesGLRL = FeatureExtractionLib.TextureGLRL(self.grayLevels, self.numGrayLevels, self.matrix, self.matrixCoordinates, self.targetVoxels, self.keys)
     self.FeatureVector.update( self.textureFeaturesGLRL.EvaluateFeatures() )
-    
-    
+     
     # Geometrical Measures    
     # TODO: progress bar does not update to Geometrical Measures while calculating (create separate thread?)
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "Geometrical Measures", len(self.FeatureVector))      
     self.geometricalMeasures = FeatureExtractionLib.GeometricalMeasures(self.labelNode, self.matrix, self.matrixCoordinates, self.targetVoxels, self.keys)
     self.FeatureVector.update( self.geometricalMeasures.EvaluateFeatures() )
-    
-    
+     
     # Renyi Dimensions            
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "Renyi Dimensions", len(self.FeatureVector))   
     # extend padding to dimension lengths equal to next power of 2
@@ -559,7 +533,6 @@ class FeatureExtractionLogic:
     self.renyiDimensions = FeatureExtractionLib.RenyiDimensions(matrixPadded, matrixPaddedCoordinates, self.keys)
     self.FeatureVector.update( self.renyiDimensions.EvaluateFeatures() )
     
-
     # close progress bar
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "Populating Summary Table", len(self.FeatureVector))
     self.progressBar.close()
@@ -590,9 +563,9 @@ class FeatureExtractionLogic:
     # with np.histogram(), all but the last bin is half-open, so make one extra bin container
     binContainers = numpy.arange(voxelArray.min(), voxelArray.max()+2)
     bins = numpy.histogram(voxelArray, bins=binContainers)[0] # frequencies 
-    ii = numpy.unique(voxelArray) # discrete gray levels
-    grayLevels = ii.size
-    return (bins, ii, grayLevels)
+    grayLevels = numpy.unique(voxelArray) # discrete gray levels
+    numGrayLevels = grayLevels.size
+    return (bins, grayLevels, numGrayLevels)
     
   def padMatrix(self, a, matrixCoordinates, dims, voxelArray):
     # pads matrix 'a' with zeros and resizes 'a' to a cube with dimensions increased to the next greatest power of 2
@@ -613,4 +586,3 @@ class FeatureExtractionLogic:
   def getFeatureVector(self):
     return (self.FeatureVector)
     
-# metric space analysis: http://well-adjusted.de/~jrspieker/mspace/
