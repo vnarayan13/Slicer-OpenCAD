@@ -30,10 +30,10 @@ class FirstOrderStatistics:
     self.bins = bins
     self.grayLevels = grayLevels
     self.keys = set(allKeys).intersection(self.firstOrderStatistics.keys())
-           
+          
   def voxelCount(self, parameterArray):
     return (parameterArray.size)
-  
+      
   def grayLevelCount(self, grayLevels):
     return (grayLevels)
       
@@ -127,4 +127,5 @@ class FirstOrderStatistics:
     
     for key in self.keys:
       self.firstOrderStatistics[key] = eval(self.firstOrderStatistics[key])
-    return(self.firstOrderStatistics)    
+    return(self.firstOrderStatistics)
+            

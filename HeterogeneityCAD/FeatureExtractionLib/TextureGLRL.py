@@ -4,8 +4,7 @@ import numpy
 import math
 import operator
 import collections
-
-#TODO: exception handling for ZeroDivision in a specific direction, theta
+import FeatureExtractionLib
 
 class TextureGLRL:
 
@@ -36,12 +35,13 @@ class TextureGLRL:
     self.angles = 13
     self.Ng = self.numGrayLevels
     self.Nr = numpy.max(self.parameterMatrix.shape)
-    self.Np = self.voxelCount(self.parameterValues)  #voxel count function
+    self.Np = self.parameterValues.size
+    self.eps = numpy.spacing(1)
         
     self.P_glrl = numpy.zeros((self.Ng, self.Nr, self.angles)) # maximum run length in P matrix initialized to highest gray level
     self.P_glrl = self.calculate_glrl(self.grayLevels, self.Ng, self.parameterMatrix, self.parameterMatrixCoordinates, self.angles, self.P_glrl)
        
-    self.sumP_glrl = numpy.sum( numpy.sum(self.P_glrl, 0), 0 )    
+    self.sumP_glrl = numpy.sum( numpy.sum(self.P_glrl, 0), 0 ) + self.eps    
     self.ivector = numpy.arange(self.Ng) + 1
     self.jvector = numpy.arange(self.Nr) + 1
        
@@ -159,13 +159,16 @@ class TextureGLRL:
     padVal = 0 #use eps or NaN to pad matrix
     matrixDiagonals = list()
     
-    #For a single direction or diagonal (aDiags, bDiags...lDiags, mDiags):   
-    #Generate a 1D array for each valid offset of the diagonal, a, in the range specified by lowBound and highBound  
-    #Convert each 1D array to a python list ( matrix.diagonal(a,,).tolist() ) 
-    #Join lists using reduce(lamda x,y: x+y, ...) to represent all 1D arrays for the direction/diagonal
-     
-    #use filter(lambda x: numpy.nonzero(x)[0].size>1, ....) to filter 1D arrays of size < 2 or value == 0 or padValue
-    #should change from nonzero() to filter for padValue specifically (NaN or eps)
+    # TODO: try using itertools list merging with lists of GLRL diagonal    
+    # i.e.: self.heterogeneityFeatureWidgets = list(itertools.chain.from_iterable(self.featureWidgets.values()))
+    
+    # For a single direction or diagonal (aDiags, bDiags...lDiags, mDiags):   
+    # Generate a 1D array for each valid offset of the diagonal, a, in the range specified by lowBound and highBound  
+    # Convert each 1D array to a python list ( matrix.diagonal(a,,).tolist() ) 
+    # Join lists using reduce(lamda x,y: x+y, ...) to represent all 1D arrays for the direction/diagonal       
+    # Use filter(lambda x: numpy.nonzero(x)[0].size>1, ....) to filter 1D arrays of size < 2 or value == 0 or padValue
+    
+    # Should change from nonzero() to filter for the padValue specifically (NaN, eps, etc)
     
     #(1,0,0), #(-1,0,0),
     aDiags = reduce(lambda x,y: x+y, [a.tolist() for a in numpy.transpose(matrix,(1,2,0))])  
@@ -249,7 +252,7 @@ class TextureGLRL:
     mDiags = [ numpy.diagonal(h,x,0,1).tolist() for h in [matrix[:,::-1,::-1].diagonal(a,0,1) for a in xrange(lowBound, highBound)] for x in xrange(-h.shape[0]+1, h.shape[1]) ]
     matrixDiagonals.append( filter(lambda x: numpy.nonzero(x)[0].size>1, mDiags) )
                 
-    #[n for n in mDiags if numpy.nonzero(n)[0].size>1] instead of filter(lambda x: numpy.nonzero(x)[0].size>1, mDiags)
+    #[n for n in mDiags if numpy.nonzero(n)[0].size>1] instead of filter(lambda x: numpy.nonzero(x)[0].size>1, mDiags)?
     
     #Run-Length Encoding (rle) for the 13 list of diagonals (1 list per 3D direction/angle)
     for angle in xrange (0, len(matrixDiagonals)):
@@ -268,10 +271,7 @@ class TextureGLRL:
         P[zip(*rle)] += 1
          
     return (P_out)   
-       
-  def voxelCount (self, parameterValues):
-    return (parameterValues.size)
-    
+   
   def EvaluateFeatures(self):  
     if not self.keys:
       return(self.textureFeaturesGLRL)

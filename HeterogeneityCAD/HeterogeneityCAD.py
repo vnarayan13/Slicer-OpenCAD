@@ -40,7 +40,6 @@ class HeterogeneityCAD:
 #
 
 class HeterogeneityCADWidget:
-
   def __init__(self, parent = None):
     if not parent:
       self.parent = slicer.qMRMLWidget()
@@ -61,6 +60,7 @@ class HeterogeneityCADWidget:
     # use OrderedDict for class-specific dictionary of function calls
     # map feature class to list of features
     self.featureClassKeys = collections.OrderedDict()
+    self.featureClassKeys["Node Information"] = ["Node"]
     self.featureClassKeys["First-Order Statistics"] = ["Voxel Count", "Gray Levels", "Energy", "Entropy" , "Minimum Intensity", "Maximum Intensity", "Mean Intensity", "Median Intensity", "Range", "Mean Deviation", "Root Mean Square",  "Standard Deviation", "Skewness", "Kurtosis", "Variance", "Uniformity"]
     self.featureClassKeys["Morphology and Shape"] = ["Volume mm^3", "Volume cc", "Surface Area mm^2", "Surface:Volume Ratio", "Compactness 1", "Compactness 2", "Maximum 3D Diameter", "Spherical Disproportion", "Sphericity"]  
     self.featureClassKeys["Texture: GLCM"] = ["Autocorrelation", "Cluster Prominence", "Cluster Shade", "Cluster Tendency", "Contrast", "Correlation", "Difference Entropy", "Dissimilarity", "Energy (GLCM)", "Entropy(GLCM)", "Homogeneity 1", "Homogeneity 2", "IMC1", "IDMN", "IDN", "Inverse Variance", "Maximum Probability", "Sum Average", "Sum Entropy", "Sum Variance", "Variance (GLCM)"] #IMC2 missing
@@ -182,48 +182,72 @@ class HeterogeneityCADWidget:
     self.featuresHeterogeneityCADLayout = qt.QFormLayout(self.HeterogeneityCADCollapsibleButton)
 
     # auto-generate QTabWidget Tabs and QCheckBoxes (subclassed in FeatureWidgetHelperLib)
-    self.tabGroupsHeterogeneityFeatures = FeatureWidgetHelperLib.CheckableTabWidget()
-    self.featuresHeterogeneityCADLayout.addRow(self.tabGroupsHeterogeneityFeatures)
+    self.tabsFeatureClasses = FeatureWidgetHelperLib.CheckableTabWidget()
+    self.featuresHeterogeneityCADLayout.addRow(self.tabsFeatureClasses)
      
-    gridWidth = 3
-    gridHeight = 9
+    gridWidth, gridHeight = 3, 9
     for featureClass in self.featureClassKeys:    
-      # by default, features only from the following features classes are selected
-      if featureClass == "First-Order Statistics" or featureClass == "Morphology and Shape":
+      # by default, features from the following features classes are checked:
+      if featureClass in ["Node Information", "First-Order Statistics", "Morphology and Shape", "Texture: GLCM", "Texture: GLRL"]:
         check = True
       else:
-        check = False
-    
+        check = False 
       tabFeatureClass = qt.QWidget()
-      tabFeatureClass.setLayout(qt.QGridLayout())
-          
-      featureList = (feature for feature in self.featureClassKeys[featureClass])
+      tabFeatureClass.setLayout(qt.QGridLayout())         
+      #featureList = (feature for feature in self.featureClassKeys[featureClass])
       gridLayoutCoordinates = ((row,col) for col in range(gridWidth) for row in range(gridHeight))
-            
-      for featureName in featureList:  
+      for featureName in self.featureClassKeys[featureClass]:
         row, col = next(gridLayoutCoordinates, None)
         if featureName is None or row is None or col is None:
-          break
-        
+          break       
         featureCheckboxWidget = FeatureWidgetHelperLib.FeatureWidget()      
         featureCheckboxWidget.Setup(featureName=featureName, checkStatus=check)
                    
         tabFeatureClass.layout().addWidget(featureCheckboxWidget, row, col)
-        self.featureWidgets[featureClass].append(featureCheckboxWidget)
-             
-      self.tabGroupsHeterogeneityFeatures.addTab(tabFeatureClass, featureClass, self.featureWidgets[featureClass], checkStatus=check)
-    
-    # top-level feature class parameters
-    self.tabGroupsHeterogeneityFeatures.addParameter("Geometrical Measures", "Extrusion Parameters")
-    self.tabGroupsHeterogeneityFeatures.addParameter("Texture: GLCM", "GLCM Matrix Parameters")
-    self.tabGroupsHeterogeneityFeatures.addParameter("Texture: GLRL", "GLRL Matrix Parameters")
-    # add capabilities for individual feature parameters
+        self.featureWidgets[featureClass].append(featureCheckboxWidget)       
+      self.tabsFeatureClasses.addTab(tabFeatureClass, featureClass, self.featureWidgets[featureClass], checkStatus=check)
+      
+    self.tabsFeatureClasses.setCurrentIndex(1)
     
     # note: try using itertools list merging with lists of GLRL diagonal    
     self.heterogeneityFeatureWidgets = list(itertools.chain.from_iterable(self.featureWidgets.values()))
     self.classes = list(self.featureWidgets.keys())
     # or reduce(lambda x,y: x+y, self.featureWidgets.values())
-
+    
+    ########## Parameter options 
+    # add parameters for top-level feature classes
+    self.tabsFeatureClasses.addParameter("Geometrical Measures", "Extrusion Parameter 1")
+    self.tabsFeatureClasses.addParameter("Texture: GLCM", "GLCM Matrix Parameter 1")
+    self.tabsFeatureClasses.addParameter("Texture: GLRL", "GLRL Matrix Parameter 1")
+    
+    # compile dict of feature classes with parameter names and values
+    self.featureClassParametersDict = collections.OrderedDict()
+    for featureClassWidget in self.tabsFeatureClasses.getFeatureClassWidgets():      
+      featureClassName = featureClassWidget.getName()  
+      self.featureClassParametersDict[featureClassName] = collections.OrderedDict()
+      self.updateFeatureClassParameterDict(0,featureClassWidget)
+      for parameterName in featureClassWidget.widgetMenu.parameters:
+        featureClassWidget.getParameterEditWindow(parameterName).connect('intValueChanged(int)', lambda intValue, featureClassWidget=featureClassWidget: self.updateFeatureClassParameterDict(intValue, featureClassWidget))
+    
+    # add parameters for individual features
+    for featureWidget in self.heterogeneityFeatureWidgets:
+      if featureWidget.getName() == "Voxel Count":
+        featureWidget.addParameter("Example Parameter 1")
+        featureWidget.addParameter("Example Parameter 2")
+      if featureWidget.getName() == "Gray Levels":
+        featureWidget.addParameter("Example Parameter 1-GL")
+        featureWidget.addParameter("Example Parameter 2-GL")
+    
+    # compile dict of features with parameter names and values
+    self.featureParametersDict = collections.OrderedDict()
+    for featureWidget in self.heterogeneityFeatureWidgets:
+      featureName = featureWidget.getName()      
+      self.featureParametersDict[featureName] = collections.OrderedDict()
+      self.updateFeatureParameterDict(0,featureWidget)
+      for parameterName in featureWidget.widgetMenu.parameters:
+        featureWidget.getParameterEditWindow(parameterName).connect('intValueChanged(int)', lambda intValue, featureWidget=featureWidget: self.updateFeatureParameterDict(intValue, featureWidget)) #connect intvaluechanged signals to updateParamaterDict function 
+    ##########
+    
     # Feature Buttons Frame and Layout
     self.featureButtonFrame = qt.QFrame(self.HeterogeneityCADCollapsibleButton)
     self.featureButtonFrame.setLayout(qt.QHBoxLayout()) 
@@ -262,7 +286,16 @@ class HeterogeneityCADWidget:
 
     #End Statistics Chart
     #################################################
-              
+    
+  def updateFeatureParameterDict(self, intValue, featureWidget):
+    featureName = featureWidget.getName() 
+    self.featureParametersDict[featureName].update(featureWidget.getParameterDict())
+    
+  def updateFeatureClassParameterDict(self, intValue, featureClassWidget):
+    featureClassName = featureClassWidget.getName() 
+    self.featureClassParametersDict[featureClassName].update(featureClassWidget.getParameterDict())
+    print self.featureClassParametersDict
+             
   def onAddDataNodeButtonClicked(self):
     self.inputDataNodes.append(self.inputSelectorVolHet.currentNode())
     self.dataNodesListWidget.addItem(self.inputSelectorVolHet.currentNode().GetName())
@@ -294,7 +327,7 @@ class HeterogeneityCADWidget:
     # self.inputDataNodes contains the input node names in 'Nodes List'
     self.labelNode = self.inputSelectorLabel.currentNode()
     
-    self.featureKeys = ["Node"]
+    self.featureKeys = []
     self.featureClassKeys = set() # no duplicate keys allowed in set()
     
     # initialize a list of feature vectors (one for each input node-ROI node pair)
@@ -319,7 +352,7 @@ class HeterogeneityCADWidget:
       return
     
     for dataNode in self.inputDataNodes:     
-      nodeLogic = FeatureExtractionLogic(dataNode, self.labelNode, self.featureKeys)
+      nodeLogic = FeatureExtractionLogic(dataNode, self.labelNode, self.featureParametersDict, self.featureClassParametersDict, self.featureKeys)
       self.FeatureVectors.append(nodeLogic.getFeatureVector())
            
     self.populateStatistics(self.FeatureVectors)  
@@ -341,11 +374,9 @@ class HeterogeneityCADWidget:
     precisionOnlyKeys = ['Entropy', 'Volume mm^3', 'Volume cc', 'Mean Intensity', 'Mean Deviation', 'Root Mean Square', 'Standard Deviation', 'Surface Area mm^3']
     
     for featureVector in FeatureVectors:
-      col = 0
-      
+      col = 0    
       for feature in featureVector:
-        item = qt.QStandardItem()
-       
+        item = qt.QStandardItem()   
         value = featureVector[feature]
         
         if isinstance(value, basestring):
@@ -375,8 +406,7 @@ class HeterogeneityCADWidget:
       self.view.setColumnWidth(col,15*len(feature))
       self.model.setHeaderData(col,1,feature)
       col += 1
-    
-          
+             
   def onSave(self):
     # todo: include a default filename such as HetergeneityCAD-Date
     if not self.fileDialog:
@@ -459,10 +489,11 @@ class HeterogeneityCADWidget:
 
 
 class FeatureExtractionLogic:
- 
-  def __init__(self, dataNode, labelNode, keys):
+  def __init__(self, dataNode, labelNode, featureParameterDict, featureClassParametersDict, keys):
     self.dataNode = dataNode
     self.labelNode = labelNode
+    self.featureParameterDict = featureParameterDict # ( keys=featureNames,values=dict(keys=parameterNames,values=parameterValues) )
+    self.featureClassParametersDict = featureClassParametersDict# ( keys=featureClassNames,values=dict(keys=parameterNames,values=parameterValues) )
     self.keys = keys
   
     # initialize Progress Bar
@@ -498,8 +529,8 @@ class FeatureExtractionLogic:
 
     # First Order Statistics    
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "First Order Statistics", len(self.FeatureVector))
-    self.distributionStatistics = FeatureExtractionLib.FirstOrderStatistics(self.targetVoxels, self.bins, self.numGrayLevels, self.keys)
-    self.FeatureVector.update( self.distributionStatistics.EvaluateFeatures() )
+    self.firstOrderStatistics = FeatureExtractionLib.FirstOrderStatistics(self.targetVoxels, self.bins, self.numGrayLevels, self.keys)
+    self.FeatureVector.update( self.firstOrderStatistics.EvaluateFeatures() )
       
     # Shape/Size and Morphological Features)
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "Morphology Statistics", len(self.FeatureVector))   
@@ -537,6 +568,9 @@ class FeatureExtractionLogic:
     self.updateProgressBar(self.progressBar, self.dataNode.GetName(), "Populating Summary Table", len(self.FeatureVector))
     self.progressBar.close()
     self.progressBar = None
+    
+    # filter for user-queried features only
+    self.FeatureVector = collections.OrderedDict((k, self.FeatureVector[k]) for k in self.keys) 
     
   def createNumpyArray (self, imageNode):
     # Generate Numpy Array from vtkMRMLScalarVolumeNode 
@@ -582,7 +616,7 @@ class FeatureExtractionLogic:
     slicer.app.processEvents()
     progressBar.labelText = 'Calculating %s: %s' % (nodeName, nextFeatureString)
     progressBar.setValue(totalSteps)
-    
+           
   def getFeatureVector(self):
     return (self.FeatureVector)
     

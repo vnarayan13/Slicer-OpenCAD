@@ -3,12 +3,11 @@ import string
 import collections
 import FeatureWidgetHelperLib
 
-
 class CheckableTabWidget(qt.QTabWidget):
 
   def __init__(self, parent=None):
     super(CheckableTabWidget, self).__init__(parent)
-    self.checkBoxList = collections.OrderedDict()
+    self.featureClassFeatureWidgets = collections.OrderedDict()
     
     # hack ( QTabWidget.setTabBar() and tabBar() are protected )
     self.tab_bar = self.findChildren(qt.QTabBar)[0]
@@ -24,11 +23,9 @@ class CheckableTabWidget(qt.QTabWidget):
   def addTab(self, widget, featureClass, featureWidgets, checkStatus=True):
     qt.QTabWidget.addTab(self, widget, featureClass)
     
-    featureClassDescriptionLabel =  FeatureWidgetHelperLib.FeatureClassDescriptionLabel()
-    featureClassDescriptionLabel.setDescription(featureClass)
     checkBox = FeatureWidgetHelperLib.FeatureWidget()       
-    checkBox.Setup(descriptionLabel = featureClassDescriptionLabel, checkStatus=checkStatus)
-    self.checkBoxList[featureClass] = checkBox
+    checkBox.Setup(featureName=featureClass, featureClassFlag=True, checkStatus=checkStatus)
+    self.featureClassFeatureWidgets[featureClass] = checkBox
     
     self.tab_bar.setTabButton(self.tab_bar.count-1, qt.QTabBar.LeftSide, checkBox)
     self.connect(checkBox, qt.SIGNAL('stateChanged(int)'), lambda checkState: self.stateChanged(checkBox, checkState, featureWidgets))
@@ -41,7 +38,7 @@ class CheckableTabWidget(qt.QTabWidget):
 
   def stateChanged(self, checkBox, checkState, featureWidgets):
     # uncheck all checkboxes in QObject # may not need to pass list?
-    index = self.checkBoxList.values().index(checkBox)
+    index = self.featureClassFeatureWidgets.values().index(checkBox)
     if checkState == 0:
       for widget in featureWidgets:
         widget.checked = False
@@ -52,46 +49,61 @@ class CheckableTabWidget(qt.QTabWidget):
   def eventFilter(self, object, event):
     # context menu request (right-click) on QTabBar is forwarded to the QCheckBox (FeatureWidget) 
     if object == self.tab_bar and event.type() == qt.QEvent.ContextMenu:
-      tabIndex = object.tabAt(event.pos())
-      
-      pos = self.checkBoxList.values()[tabIndex].mapFrom(self.tab_bar, event.pos())
+      tabIndex = object.tabAt(event.pos())   
+      pos = self.featureClassFeatureWidgets.values()[tabIndex].mapFrom(self.tab_bar, event.pos())
            
       if tabIndex > -1:
-        qt.QCoreApplication.sendEvent(self.checkBoxList.values()[tabIndex], qt.QContextMenuEvent(0, pos))
+        qt.QCoreApplication.sendEvent(self.featureClassFeatureWidgets.values()[tabIndex], qt.QContextMenuEvent(0, pos))
                     
       return True               
     return False
     
+  def getFeatureClassWidgets(self):
+    return(self.featureClassFeatureWidgets.values())
+    
   def addParameter(self, featureClass, parameter):
-    self.checkBoxList[featureClass].addParameter(parameter)
+    self.featureClassFeatureWidgets[featureClass].addParameter(parameter)
   
   
 class FeatureWidget(qt.QCheckBox):
   def __init__(self, parent=None):
     super(FeatureWidget, self).__init__(parent)
         
-  def Setup(self, featureName="", descriptionLabel=None, checkStatus=True):
+  def Setup(self, featureName="", featureClassFlag=False, checkStatus=True):
     self.featureName = featureName
-    self.checkStatus = checkStatus
-    if descriptionLabel:
-      self.descriptionLabel = descriptionLabel 
-    else:
+    self.checked = checkStatus
+    
+    if featureClassFlag:
+      self.descriptionLabel =  FeatureWidgetHelperLib.FeatureClassDescriptionLabel()
+      self.descriptionLabel.setDescription(self.featureName)
+    else:  
       self.descriptionLabel = FeatureWidgetHelperLib.FeatureDescriptionLabel()
       self.descriptionLabel.setDescription(self.featureName)
-      
-    self.setText(self.featureName)
-    self.checked = self.checkStatus
-
+      self.setText(self.featureName)
+  
     self.setContextMenuPolicy(3)
-    self.widgetMenu = ContextMenu(self)
+    self.widgetMenu = FeatureWidgetHelperLib.ContextMenu(self)
     self.widgetMenu.Setup(self.featureName, self.descriptionLabel) 
     self.customContextMenuRequested.connect(lambda point: self.connectMenu(point))
        
   def connectMenu(self, pos):
     self.widgetMenu.popup(self.mapToGlobal(pos))
       
-  def addParameter(self, parameter):
-    self.widgetMenu.addParameter(self, parameter) 
+  def addParameter(self, parameterName):
+    self.widgetMenu.addParameter(parameterName)
+    
+  def getParameterDict(self):
+    parameterDict = collections.OrderedDict()
+    for k,v in self.widgetMenu.parameters.items():
+      value = v['Edit Window'].getValue()
+      parameterDict[k] = value
+    return (parameterDict)
+    
+  def getParameterEditWindow(self, parameterName):
+    return(self.widgetMenu.parameters[parameterName]['Edit Window'])
+    
+  def getName(self):
+    return(self.featureName) 
   
   
 class ContextMenu(qt.QMenu):
@@ -109,38 +121,42 @@ class ContextMenu(qt.QMenu):
     self.reloadActions()
       
   def reloadActions(self):
-    #does adding an action that exists in the menu just replace that action slot?
     self.addAction(self.descriptionAction)    
     for parameter in self.parameters:
       self.addAction(self.parameters[parameter]['Action'])               
     self.addAction(self.closeAction)
       
-  def addParameter(self, parent, parameterName):
-    helpString = "Edit " + parameterName + " (" + self.featureName + ")"
-      
+  def addParameter(self, parameterName):    
     self.parameters[parameterName] = {}
     self.parameters[parameterName]['Action'] = qt.QAction(('Edit %s' %parameterName), self)
-    self.parameters[parameterName]['EditWindow'] = self.ParameterEditWindow(parent, self.featureName, helpString)
+    self.parameters[parameterName]['Edit Window'] = FeatureWidgetHelperLib.ParameterEditWindow(self, self.featureName, parameterName)
             
-    self.parameters[parameterName]['Action'].connect('triggered()', lambda parameterName=parameterName: self.parameters[parameterName]['EditWindow'].showWindow())
+    self.parameters[parameterName]['Action'].connect('triggered()', lambda parameterName=parameterName: self.parameters[parameterName]['Edit Window'].showWindow())
     self.reloadActions()
     
-  #class ParameterEditWindow(qt.QInputDialog):
-    #def __init__(self, parent=None):
-      #super(FeatureWidget.ContextMenu, self).__init__(parent)
-            
-  class ParameterEditWindow(object):  
-    def __init__(self, parent, featureName, helpString = ""): 
-      self.helpString = helpString
-      windowTitle = "Edit Parameter Window"
-      self.editWindow = qt.QInputDialog(parent)
-      self.editWindow.setLabelText(self.helpString + " (Current Value = " + str(self.editWindow.intValue()) + "): ")
-      self.editWindow.setInputMode(1) #make this modifiable
-
-    def showWindow(self):
-      self.resetLabel()     
-      self.editWindow.open()
+  def getParameters(self):
+    return(self.parameters)
+    
       
-    def resetLabel(self):
-      self.editWindow.setLabelText(self.helpString + " (Current Value = " + str(self.editWindow.intValue()) + "): ")  
+class ParameterEditWindow(qt.QInputDialog):
+
+  def __init__(self, parent=None, featureName="", parameterName=""):
+    super(ParameterEditWindow, self).__init__(parent)
+  
+    self.featureName = featureName
+    self.parameterName = parameterName
+    self.helpString = "Edit " + parameterName + " (" + self.featureName + ")"
+    
+    self.setLabelText(self.helpString + "\nCurrent Value = " + str(self.getValue()) + ": ")
+    self.setInputMode(1) #integer input only #make this modifiable
+  
+  def showWindow(self):
+    self.resetLabel()     
+    self.open()
+      
+  def resetLabel(self):
+    self.setLabelText(self.helpString + " (Current Value = " + str(self.getValue()) + "): ")  
+    
+  def getValue(self):
+    return(self.intValue())
           
