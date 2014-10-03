@@ -379,6 +379,9 @@ class HeterogeneityCADWidget:
         item = qt.QStandardItem()   
         value = featureVector[feature]
         
+        featureFormatted = value
+        """
+        #formatting errors in windows
         if isinstance(value, basestring):
           featureFormatted = value
         elif isinstance(value, decimal.Decimal):
@@ -389,7 +392,7 @@ class HeterogeneityCADWidget:
           featureFormatted = '{:.2f}'.format(value)
         else:
           featureFormatted = '{:10.4e}'.format(value)
-        
+        """
         item.setText(str(featureFormatted))
         item.setToolTip(feature)
         self.model.setItem(row,col,item)
