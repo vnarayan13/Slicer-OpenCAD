@@ -20,8 +20,9 @@ class GeometricalMeasures:
     self.parameterValues = parameterValues
     self.keys = set(allKeys).intersection(self.GeometricalMeasures.keys())
     
-    self.cubicMMPerVoxel = reduce(lambda x,y: x*y, self.labelNode.GetSpacing())
-    self.extrudedMatrix, self.extrudedMatrixCoordinates = self.extrudeMatrix(self.parameterMatrix, self.parameterMatrixCoordinates, self.parameterValues)
+    if self.keys:
+      self.cubicMMPerVoxel = reduce(lambda x,y: x*y, self.labelNode.GetSpacing())
+      self.extrudedMatrix, self.extrudedMatrixCoordinates = self.extrudeMatrix(self.parameterMatrix, self.parameterMatrixCoordinates, self.parameterValues)
     
   def extrudedSurfaceArea(self, labelNode, extrudedMatrix, extrudedMatrixCoordinates, parameterValues):
     x, y, z = labelNode.GetSpacing()
@@ -63,7 +64,10 @@ class GeometricalMeasures:
     
   def extrudeMatrix(self, parameterMatrix, parameterMatrixCoordinates, parameterValues):
     # extrude 3D image into a binary 4D array with the intensity or parameter value as the 4th Dimension
-    
+    # need to normalize CT images with a shift of 120 Hounsfield units 
+	
+    parameterValues = numpy.abs(parameterValues)
+	
     # maximum intensity/parameter value appended as shape of 4th dimension    
     extrudedShape = parameterMatrix.shape + (numpy.max(parameterValues),)
     
