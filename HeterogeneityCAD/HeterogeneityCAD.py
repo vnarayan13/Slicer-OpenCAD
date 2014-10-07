@@ -74,15 +74,7 @@ class HeterogeneityCADWidget:
       self.featureWidgets[key] = list()   
   
   def setup(self):  
-    #Instantiate and Connect Widgets   
-    ############################### Reload Button
-    self.reloadButton = qt.QPushButton("Reload")
-    self.reloadButton.toolTip = "Reload this module."
-    self.reloadButton.name = "HeterogeneityCAD Reload"
-    self.layout.addWidget(self.reloadButton)
-    self.reloadButton.connect('clicked()', self.onReload)
-    ###############################
-    
+    #Instantiate and Connect Widgets 
     #################################################
     #HeterogeneityCAD Inputs Collapsible Button
     
@@ -125,7 +117,7 @@ class HeterogeneityCADWidget:
     self.allButtonsFrame.setLayout(qt.QVBoxLayout())
     self.inputHeterogeneityCADLayout.addRow(self.dataNodesFrame, self.allButtonsFrame)
     # Data Nodes view
-    # Use list view here with scrollarea widget.
+    # Use list view here with scroll area widget.
     self.dataScrollArea = qt.QScrollArea()  
     self.dataNodesListWidget = qt.QListWidget()
     self.dataNodesListWidget.name = 'dataNodesListWidget'
@@ -377,22 +369,9 @@ class HeterogeneityCADWidget:
       col = 0    
       for feature in featureVector:
         item = qt.QStandardItem()   
-        value = featureVector[feature]
-        
+        value = featureVector[feature]       
         featureFormatted = value
-        """
-        #formatting errors in windows
-        if isinstance(value, basestring):
-          featureFormatted = value
-        elif isinstance(value, decimal.Decimal):
-          featureFormatted = str(value)
-        elif feature in wholeNumberKeys:
-          featureFormatted = int(value)
-        elif (feature in precisionOnlyKeys) or (abs(value) > .01 and abs(value) < 1000):
-          featureFormatted = '{:.2f}'.format(value)
-        else:
-          featureFormatted = '{:10.4e}'.format(value)
-        """
+        # add formatting here
         item.setText(str(featureFormatted))
         item.setToolTip(feature)
         self.model.setItem(row,col,item)
@@ -456,41 +435,6 @@ class HeterogeneityCADWidget:
     fp.write(self.statisticsAsCSV())
     fp.close()
       
-  def onReload(self, moduleName="HeterogeneityCAD"):
-    #Generic reload method for any scripted module.
-    #ModuleWizard will subsitute correct default moduleName.
-    
-    import imp, sys, os, slicer
-    
-    widgetName = moduleName + "Widget"
-
-    # reload the source code
-    # - set source file path
-    # - load the module to the global space
-    filePath = eval('slicer.modules.%s.path' % moduleName.lower())
-    p = os.path.dirname(filePath)
-    if not sys.path.__contains__(p):
-      sys.path.insert(0,p)
-    fp = open(filePath, "r")
-    globals()[moduleName] = imp.load_module(
-        moduleName, fp, filePath, ('.py', 'r', imp.PY_SOURCE))
-    fp.close()
-
-    # rebuild the widget
-    # - find and hide the existing widget
-    # - create a new widget in the existing parent
-    # parent = slicer.util.findChildren(name='%s Reload' % moduleName)[0].parent()
-    parent = self.parent
-    for child in parent.children():
-      try:
-        child.hide()
-      except AttributeError:
-        pass
-    globals()[widgetName.lower()] = eval(
-        'globals()["%s"].%s(parent)' % (moduleName, widgetName))
-    globals()[widgetName.lower()].setup()
-
-
 class FeatureExtractionLogic:
   def __init__(self, dataNode, labelNode, featureParameterDict, featureClassParametersDict, keys):
     self.dataNode = dataNode
