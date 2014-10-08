@@ -23,9 +23,9 @@ class SegmentCAD:
     This file was originally developed by Vivek Narayan and Jayender Jagadeesan (Brigham and Women's Hospital)
     """
    
-    MODULE_PATH = os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe())))
-    ICON_PATH = os.path.join(MODULE_PATH, 'Resources', 'Icons', 'OpenCAD.png').replace("\\","/")
-    parent.icon = qt.QIcon(ICON_PATH)
+    #MODULE_PATH = os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe())))
+    #ICON_PATH = os.path.join(MODULE_PATH, 'Resources', 'Icons', 'OpenCAD.png').replace("\\","/")
+    #parent.icon = qt.QIcon(ICON_PATH)
     
     self.parent = parent
 
