@@ -5,13 +5,13 @@ set(MODULE_NAME HeterogeneityCAD)
 set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}.py
   FeatureExtractionLib/__init__
-  FeatureExtractionLib/FirstOrderStatistics
-  FeatureExtractionLib/GeometricMeasures
-  FeatureExtractionLib/MorphologyStatistics
   FeatureExtractionLib/NodeInformation
-  FeatureExtractionLib/RenyiDimensions
+  FeatureExtractionLib/FirstOrderStatistics
+  FeatureExtractionLib/MorphologyStatistics
   FeatureExtractionLib/TextureGLCM
   FeatureExtractionLib/TextureGLRL
+  FeatureExtractionLib/RenyiDimensions
+  FeatureExtractionLib/GeometricalMeasures
   FeatureWidgetHelperLib/__init__
   FeatureWidgetHelperLib/FeatureDescriptionLabel
   FeatureWidgetHelperLib/FeatureWidgets

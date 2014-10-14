@@ -7,12 +7,10 @@ import decimal
 import operator
 import collections
 import itertools
-from decimal import *
-
-from vtk import vtkShortArray
-
 import FeatureExtractionLib
 import FeatureWidgetHelperLib
+from decimal import *
+from vtk import vtkShortArray
 
 #
 # HeterogeneityCAD
