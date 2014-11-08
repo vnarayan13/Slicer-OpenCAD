@@ -109,16 +109,26 @@ class SegmentCADLogic:
     self.nodeArraySegmentCADLabel = self.nodeArraySegmentCADLabel.reshape(dims1D, order='C') #use a flattening function
     scalarArray = vtk.util.numpy_support.numpy_to_vtk(self.nodeArraySegmentCADLabel)
     # PointData() of SegmentCAD label output pointed to new vtkShortArray for scalar values
-    SegmentCADLabelMapImageData.SetScalarTypeToShort()
-    SegmentCADLabelMapPointData.SetScalars(scalarArray)
-    SegmentCADLabelMapPointData.Update()
-    SegmentCADLabelMapImageData.Update()
+    
+    if vtk.VTK_MAJOR_VERSION <= 5:
+      #SegmentCADLabelMapImageData.SetScalarTypeToShort()
+      SegmentCADLabelMapPointData.SetScalars(scalarArray)
+      SegmentCADLabelMapPointData.Update()
+    else:
+      #SegmentCADLabelMapImageData.SetScalarType(4)
+      SegmentCADLabelMapPointData.SetScalars(scalarArray)
+      SegmentCADLabelMapImageData.Modified()
+    
     self.SegmentCADLabelMap.SetAndObserveImageData(SegmentCADLabelMapImageData)
     # Corresponding display node and color table nodes created for SegmentCAD label Output
     self.SegmentCADLabelMapDisplay = slicer.vtkMRMLLabelMapVolumeDisplayNode()
     self.SegmentCADLabelMapDisplay.SetScene(slicer.mrmlScene)
     self.SegmentCADLabelMapDisplay.SetAndObserveColorNodeID('vtkMRMLColorTableNodeFileGenericColors.txt')
-    self.SegmentCADLabelMapDisplay.SetInputImageData(SegmentCADLabelMapImageData)
+    
+    if vtk.VTK_MAJOR_VERSION <= 5:
+      self.SegmentCADLabelMapDisplay.SetInputImageData(self.SegmentCADLabelMap.GetImageData())
+    else:
+      self.SegmentCADLabelMapDisplay.SetInputImageDataConnection(self.SegmentCADLabelMap.GetImageDataConnection())
     self.SegmentCADLabelMapDisplay.UpdateImageDataPipeline()
     
     slicer.mrmlScene.AddNode(self.SegmentCADLabelMapDisplay)
