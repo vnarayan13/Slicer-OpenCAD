@@ -91,7 +91,6 @@ class HeterogeneityCADWidget:
     # select individual nodes
     self.inputSelectorVolHet = slicer.qMRMLNodeComboBox(self.inputVolHetFrame)
     self.inputSelectorVolHet.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    #self.inputSelectorVolHet.addAttribute( ("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorVolHet.selectNodeUponCreation = False 
     self.inputSelectorVolHet.addEnabled = False
     self.inputSelectorVolHet.removeEnabled = False
@@ -152,8 +151,7 @@ class HeterogeneityCADWidget:
     self.inputLabelROIFrame.layout().addWidget(self.inputLabelROI) 
     # Select Input Label Map as ROI
     self.inputSelectorLabel = slicer.qMRMLNodeComboBox(self.inputLabelROIFrame)
-    self.inputSelectorLabel.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.inputSelectorLabel.addAttribute( ("vtkMRMLScalarVolumeNode"), "LabelMap", "1")
+    self.inputSelectorLabel.nodeTypes = ( ("vtkMRMLLabelMapVolumeNode"), "" )
     self.inputSelectorLabel.selectNodeUponCreation = False
     self.inputSelectorLabel.renameEnabled = True
     self.inputSelectorLabel.removeEnabled = False 

@@ -97,7 +97,6 @@ class SegmentCADWidget:
     self.inputPre.setToolTip('Select the initial pre-contrast volume node.')
     self.inputSelectorPre = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorPre.nodeTypes = (("vtkMRMLScalarVolumeNode"), "")
-    self.inputSelectorPre.addAttribute(("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorPre.selectNodeUponCreation = False
     self.inputSelectorPre.addEnabled = False
     self.inputSelectorPre.removeEnabled = False
@@ -113,7 +112,6 @@ class SegmentCADWidget:
     self.inputFirst.setToolTip('Select the first post-contrast volume node to calculate intitial enhancement and curve type.')
     self.inputSelectorFirst = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorFirst.nodeTypes = (("vtkMRMLScalarVolumeNode"), "")
-    self.inputSelectorFirst.addAttribute(("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorFirst.selectNodeUponCreation = False
     self.inputSelectorFirst.addEnabled = False
     self.inputSelectorFirst.removeEnabled = False
@@ -129,7 +127,6 @@ class SegmentCADWidget:
     self.inputSecond.setToolTip('Select a second post-contrast volume node (not required).')
     self.inputSelectorSecond = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorSecond.nodeTypes = (("vtkMRMLScalarVolumeNode"), "")
-    self.inputSelectorSecond.addAttribute(("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorSecond.selectNodeUponCreation = False
     self.inputSelectorSecond.addEnabled = False
     self.inputSelectorSecond.removeEnabled = False
@@ -145,7 +142,6 @@ class SegmentCADWidget:
     self.inputThird.setToolTip('Select a third post-contrast volume node (not required).')
     self.inputSelectorThird = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorThird.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.inputSelectorThird.addAttribute( ("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorThird.selectNodeUponCreation = False
     self.inputSelectorThird.addEnabled = False
     self.inputSelectorThird.removeEnabled = False
@@ -161,7 +157,6 @@ class SegmentCADWidget:
     self.inputFourth.setToolTip('Select the fourth or final post-contrast volume node to calculate curve type based on the delayed curve slope.')
     self.inputSelectorFourth = slicer.qMRMLNodeComboBox(self.nodeInputFrame)
     self.inputSelectorFourth.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.inputSelectorFourth.addAttribute( ("vtkMRMLScalarVolumeNode"), "LabelMap", "0")
     self.inputSelectorFourth.selectNodeUponCreation = False
     self.inputSelectorFourth.addEnabled = False
     self.inputSelectorFourth.removeEnabled = False
@@ -178,8 +173,7 @@ class SegmentCADWidget:
     self.enableLabel.checked = True
     self.enableLabel.setToolTip('Select and identify a custom label map node to define an ROI over the input volumes for faster segmentation.')
     self.inputSelectorLabel = slicer.qMRMLNodeComboBox(self.selectionsCollapsibleButton)
-    self.inputSelectorLabel.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.inputSelectorLabel.addAttribute( ("vtkMRMLScalarVolumeNode"), "LabelMap", "1")
+    self.inputSelectorLabel.nodeTypes = ( ("vtkMRMLLabelMapVolumeNode"), "" )
     self.inputSelectorLabel.selectNodeUponCreation = False
     self.inputSelectorLabel.renameEnabled = True
     self.inputSelectorLabel.removeEnabled = False
@@ -199,8 +193,7 @@ class SegmentCADWidget:
     self.outputLabel = qt.QLabel("Output SegmentCAD Label Map", self.outlabelCollapsibleButton)
     self.outputLabel.setToolTip('Select or create a label map volume node as the SegmentCAD segmentation output.')
     self.outputSelectorLabel = slicer.qMRMLNodeComboBox(self.outlabelCollapsibleButton)
-    self.outputSelectorLabel.nodeTypes = ( ("vtkMRMLScalarVolumeNode"), "" )
-    self.outputSelectorLabel.addAttribute( ("vtkMRMLScalarVolumeNode"), "LabelMap", "1")
+    self.outputSelectorLabel.nodeTypes = ( ("vtkMRMLLabelMapVolumeNode"), "" )
     self.outputSelectorLabel.baseName = "SegmentCAD Label Map"
     self.outputSelectorLabel.selectNodeUponCreation = True
     self.outputSelectorLabel.renameEnabled = True
