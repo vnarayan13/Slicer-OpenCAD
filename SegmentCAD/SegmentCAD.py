@@ -173,7 +173,7 @@ class SegmentCADWidget:
     self.enableLabel.checked = True
     self.enableLabel.setToolTip('Select and identify a custom label map node to define an ROI over the input volumes for faster segmentation.')
     self.inputSelectorLabel = slicer.qMRMLNodeComboBox(self.selectionsCollapsibleButton)
-    self.inputSelectorLabel.nodeTypes = ( ("vtkMRMLLabelMapVolumeNode"), "" )
+    self.inputSelectorLabel.nodeTypes = ["vtkMRMLLabelMapVolumeNode"]
     self.inputSelectorLabel.selectNodeUponCreation = False
     self.inputSelectorLabel.renameEnabled = True
     self.inputSelectorLabel.removeEnabled = False
@@ -193,7 +193,7 @@ class SegmentCADWidget:
     self.outputLabel = qt.QLabel("Output SegmentCAD Label Map", self.outlabelCollapsibleButton)
     self.outputLabel.setToolTip('Select or create a label map volume node as the SegmentCAD segmentation output.')
     self.outputSelectorLabel = slicer.qMRMLNodeComboBox(self.outlabelCollapsibleButton)
-    self.outputSelectorLabel.nodeTypes = ( ("vtkMRMLLabelMapVolumeNode"), "" )
+    self.outputSelectorLabel.nodeTypes = ["vtkMRMLLabelMapVolumeNode"]
     self.outputSelectorLabel.baseName = "SegmentCAD Label Map"
     self.outputSelectorLabel.selectNodeUponCreation = True
     self.outputSelectorLabel.renameEnabled = True
