@@ -22,7 +22,7 @@ class SegmentCADLogic:
     if vtk.VTK_MAJOR_VERSION <= 5:
       extract.SetInput(self.multiVolumeNode.GetImageData())
     else:
-      extract.SetInputData(self.multiVolumeNode.GetImageData)
+      extract.SetInputData(self.multiVolumeNode.GetImageData())
     extract.SetComponents(0)
     extract.Update()
     ras2ijk = vtk.vtkMatrix4x4()
